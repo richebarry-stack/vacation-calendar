@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vacation Home — Booking Calendar</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens ── */
+:root {
+  --bg:       #f6f5f1;
+  --surface:  #ffffff;
+  --surface2: #efede8;
+  --border:   rgba(0,0,0,0.09);
+  --border2:  rgba(0,0,0,0.16);
+  --text:     #1a1a17;
+  --text2:    #6b6a65;
+  --text3:    #a0a09a;
+  --radius:   8px;
+  --radius-lg:12px;
+
+  --rich:  #2563eb; --rich-bg:  #dbeafe; --rich-text:  #1e3a6e; --rich-bd:  #93c5fd;
+  --greg:  #16a34a; --greg-bg:  #dcfce7; --greg-text:  #14532d; --greg-bd:  #86efac;
+  --john:  #7c3aed; --john-bg:  #ede9fe; --john-text:  #3b0764; --john-bd:  #c4b5fd;
+  --float-bg: #fef3c7; --float-text: #78350f; --float-bd: #fcd34d;
+  --gc-bg:    #fce7f3; --gc-text:   #831843; --gc-bd:    #f9a8d4;
+  --pend-bg:  #ffedd5; --pend-text: #7c2d12; --pend-bd:  #fdba74;
+  --appr-bg:  #d1fae5; --appr-text: #064e3b; --appr-bd:  #6ee7b7;
+
+  --blue: #2563eb; --green: #16a34a; --red: #dc2626; --amber: #d97706;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1b1b19;--surface:#242422;--surface2:#2d2d2a;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
+  --text:#e8e7e3;--text2:#9e9e98;--text3:#5e5e5a;
+  --rich-bg:#1e3a6e;--rich-text:#bfdbfe;--rich-bd:#1d4ed8;
+  --greg-bg:#14532d;--greg-text:#bbf7d0;--greg-bd:#15803d;
+  --john-bg:#3b0764;--john-text:#e9d5ff;--john-bd:#6d28d9;
+  --float-bg:#78350f;--float-text:#fde68a;--float-bd:#b45309;
+  --gc-bg:#831843;--gc-text:#fbcfe8;--gc-bd:#be185d;
+  --pend-bg:#7c2d12;--pend-text:#fed7aa;--pend-bd:#c2410c;
+  --appr-bg:#064e3b;--appr-text:#a7f3d0;--appr-bd:#059669;
+}}
+
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
+
+/* ── Setup screen ── */
+#setup-screen { max-width: 480px; margin: 4rem auto; padding: 0 1rem; }
+#setup-screen h1 { font-size: 22px; font-weight: 600; margin-bottom: .25rem; }
+#setup-screen p  { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; }
+.setup-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; }
+.setup-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 1rem; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+.field { margin-bottom: .75rem; }
+.field label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.field input, .field select {
+  width: 100%; font-size: 14px; padding: 8px 10px;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); font-family: inherit; }
+.field input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.field .hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
+code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+  background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
+
+/* ── Login screen ── */
+#login-screen { max-width: 360px; margin: 5rem auto; padding: 0 1rem; text-align: center; }
+#login-screen h1 { font-size: 22px; font-weight: 600; margin-bottom: .5rem; }
+#login-screen p { font-size: 14px; color: var(--text2); margin-bottom: 2rem; }
+.who-btns { display: flex; flex-direction: column; gap: 10px; }
+.who-btn { font-size: 16px; font-weight: 500; padding: 14px; border-radius: var(--radius-lg);
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text);
+  cursor: pointer; transition: background .13s, transform .1s; }
+.who-btn:hover { background: var(--surface2); }
+.who-btn:active { transform: scale(.98); }
+.who-btn.rich  { border-color: var(--rich-bd);  color: var(--rich-text);  background: var(--rich-bg); }
+.who-btn.greg  { border-color: var(--greg-bd);  color: var(--greg-text);  background: var(--greg-bg); }
+.who-btn.john  { border-color: var(--john-bd);  color: var(--john-text);  background: var(--john-bg); }
+
+/* ── App shell ── */
+#app-shell { display: none; }
+header { background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: .75rem 1.25rem; display: flex; align-items: center; justify-content: space-between;
+  gap: .75rem; flex-wrap: wrap; position: sticky; top: 0; z-index: 20; }
+.header-left h2 { font-size: 16px; font-weight: 600; }
+.header-left .who-badge { font-size: 12px; font-weight: 600; padding: 2px 10px;
+  border-radius: 99px; border: 1px solid transparent; display: inline-block; margin-top: 2px; }
+.who-badge.rich  { background: var(--rich-bg);  color: var(--rich-text);  border-color: var(--rich-bd); }
+.who-badge.greg  { background: var(--greg-bg);  color: var(--greg-text);  border-color: var(--greg-bd); }
+.who-badge.john  { background: var(--john-bg);  color: var(--john-text);  border-color: var(--john-bd); }
+
+.tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius); padding: 3px; }
+.tab { font-size: 13px; padding: 5px 14px; border-radius: 6px; border: none;
+  background: none; color: var(--text2); cursor: pointer; font-weight: 500; }
+.tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+
+/* ── Quarter workflow ── */
+.qflow { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.25rem; margin-bottom: 1.25rem; }
+.qflow h3 { font-size: 15px; font-weight: 600; margin-bottom: .25rem; }
+.qflow .sub { font-size: 13px; color: var(--text2); margin-bottom: 1rem; }
+.phase-steps { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+.phase-step { font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--border2);
+  color: var(--text2); background: var(--surface2); }
+.phase-step.done { background: var(--appr-bg); color: var(--appr-text); border-color: var(--appr-bd); }
+.phase-step.active { background: var(--float-bg); color: var(--float-text); border-color: var(--float-bd); font-weight: 600; }
+
+/* ── Calendar ── */
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
+.cal-nav button { font-size: 18px; width: 34px; height: 34px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); color: var(--text); cursor: pointer; }
+.cal-nav button:hover { background: var(--surface2); }
+.cal-month { font-size: 16px; font-weight: 600; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  background: var(--border); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); }
+.day-hdr { background: var(--surface2); font-size: 11px; font-weight: 600; text-align: center;
+  padding: 6px 2px; color: var(--text3); letter-spacing: .3px; }
+.day-cell { background: var(--surface); min-height: 62px; padding: 5px 5px; position: relative; }
+.day-cell.other { background: var(--surface2); opacity: .45; }
+.day-cell.pre-open { opacity: .5; }
+.day-cell.selectable { cursor: pointer; }
+.day-cell.selectable:hover { filter: brightness(.96); }
+.day-cell.selected-mine { outline: 2px solid var(--blue); outline-offset: -2px; }
+.day-cell.mine-releasable { cursor: pointer; }
+.day-cell.mine-releasable:hover { filter: brightness(.92); }
+.day-cell.user-selectable { cursor: pointer; }
+.day-cell.user-selectable:hover { filter: brightness(.96); }
+.day-cell.today { background: #eff6ff; }
+@media(prefers-color-scheme:dark){ .day-cell.today { background: #1e2a40; } }
+.day-num { display: block; font-size: 11px; font-weight: 600; color: var(--text3); margin-bottom: 3px; }
+.day-cell.today .day-num { color: var(--blue); }
+.pill { font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px;
+  display: inline-block; line-height: 1.4; border: 1px solid transparent;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Legend ── */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 1rem; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--border2); flex-shrink: 0; }
+
+/* ── Stats ── */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 1.25rem; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+.stat-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
+.stat-val { font-size: 22px; font-weight: 700; letter-spacing: -.5px; }
+
+/* ── Buttons ── */
+.btn { font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: var(--radius);
+  border: 1px solid var(--border2); background: var(--surface); color: var(--text); cursor: pointer; }
+.btn:hover { background: var(--surface2); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.primary  { background: var(--blue);  color: #fff; border-color: var(--blue); }
+.btn.success  { background: var(--green); color: #fff; border-color: var(--green); }
+.btn.danger   { background: var(--red);   color: #fff; border-color: var(--red); }
+.btn.amber    { background: var(--amber); color: #fff; border-color: var(--amber); }
+.btn.primary:hover,.btn.success:hover,.btn.danger:hover,.btn.amber:hover { opacity: .88; }
+
+/* ── Action row ── */
+.action-row { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+.info-box { background: var(--float-bg); color: var(--float-text); border: 1px solid var(--float-bd);
+  border-radius: var(--radius); padding: 10px 14px; font-size: 13px; margin-bottom: 1rem; }
+.info-box.blue { background: var(--rich-bg); color: var(--rich-text); border-color: var(--rich-bd); }
+.info-box.green { background: var(--appr-bg); color: var(--appr-text); border-color: var(--appr-bd); }
+.info-box.purple { background: var(--john-bg); color: var(--john-text); border-color: var(--john-bd); }
+
+/* ── Selection counter ── */
+.sel-counter { font-size: 13px; color: var(--text2); padding: 7px 14px;
+  background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
+
+/* ── Modal ── */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.42);
+  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+.modal { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border2);
+  padding: 1.5rem; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+.form-row input, .form-row textarea, .form-row select {
+  width: 100%; font-size: 14px; padding: 8px 10px;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); font-family: inherit; }
+.form-row textarea { resize: vertical; min-height: 64px; }
+.form-row input:focus, .form-row textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; }
+.err { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+/* ── Admin panel ── */
+.admin-section { margin-bottom: 2rem; }
+.admin-section h3 { font-size: 15px; font-weight: 600; margin-bottom: .75rem;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+.req-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.req-card .info { flex: 1; min-width: 0; }
+.req-card .rname { font-size: 14px; font-weight: 600; }
+.req-card .rdates { font-size: 13px; color: var(--text2); margin-top: 2px; }
+.req-card .rnote { font-size: 12px; color: var(--text3); margin-top: 4px; font-style: italic; }
+.req-card .actions { display: flex; gap: 6px; flex-shrink: 0; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 99px; border: 1px solid transparent; }
+.badge.approved { background: var(--appr-bg); color: var(--appr-text); border-color: var(--appr-bd); }
+.badge.denied { background: var(--surface2); color: var(--text2); }
+.empty { font-size: 13px; color: var(--text3); padding: .75rem 0; }
+
+/* ── Guest user badge ── */
+.who-badge.guest { background:var(--surface2); color:var(--text2); border-color:var(--border2); }
+.who-btn.guest { border-color:var(--border2); color:var(--text); background:var(--surface2); }
+
+/* ── John selection bar ── */
+#user-sel-bar {
+  display: none;
+  position: sticky;
+  top: 57px;
+  z-index: 15;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  padding: .85rem 1.1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#user-sel-bar.active { display: flex; }
+
+#john-sel-bar {
+  display: none;
+  position: sticky;
+  top: 57px;
+  z-index: 15;
+  background: var(--john-bg);
+  border: 1px solid var(--john-bd);
+  border-radius: var(--radius-lg);
+  padding: .85rem 1.1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#john-sel-bar.active { display: flex; }
+.john-bar-count { font-size: 15px; font-weight: 600; color: var(--john-text); flex: 1; min-width: 160px; }
+.john-bar-count span { font-size: 13px; font-weight: 400; margin-left: 8px; }
+.john-bar-err { font-size: 12px; color: var(--red); width: 100%; margin-top: 2px; display: none; }
+
+/* ── Inline admin section ── */
+#admin-content { margin-top: 2rem; }
+#admin-content .admin-section { margin-bottom: 1.5rem; }
+#admin-content .admin-section h3 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: .75rem; border-bottom: 1px solid var(--border); padding-bottom: .4rem; }
+.password-row { display: flex; align-items: center; gap: 8px; margin-bottom: .5rem; flex-wrap: wrap; }
+.password-row .uname { font-size: 14px; font-weight: 500; min-width: 90px; }
+.password-row input { font-size: 13px; padding: 5px 9px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); width: 140px; }
+
+/* ── Loading spinner ── */
+.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border2);
+  border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-bar { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+
+@media(max-width:500px){
+  .day-cell { min-height: 48px; }
+  .pill { font-size: 9px; padding: 1px 3px; }
+  .cal-month { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Setup screen ── -->
+<div id="setup-screen">
+  <h1>Vacation Home Calendar</h1>
+  <p>Connect your Coda doc to get started. You only need to do this once.</p>
+  <div class="setup-card">
+    <h2>Coda credentials</h2>
+    <div class="field">
+      <label>API token</label>
+      <input type="password" id="cfg-token" placeholder="Paste your Coda API token">
+      <div class="hint">Coda → Account settings → API settings → Generate API token</div>
+    </div>
+    <div class="field">
+      <label>Doc ID</label>
+      <input type="text" id="cfg-doc" placeholder="e.g. abc123XYZ">
+      <div class="hint">From your doc URL: coda.io/d/<code>docId</code>/…</div>
+    </div>
+  </div>
+  <div class="setup-card">
+    <h2>Required Coda tables</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:.75rem">
+      Create a new Coda doc and add these four tables exactly as named:
+    </p>
+    <div style="font-size:13px;line-height:2">
+      <strong>Table 1 — <code>Reservations</code></strong><br>
+      Columns: <code>Owner</code> (text), <code>Type</code> (text), <code>StartDate</code> (date),
+      <code>EndDate</code> (date), <code>Status</code> (text), <code>Quarter</code> (text), <code>Note</code> (text)
+      <br><small style="color:var(--text3)">One row per day — StartDate and EndDate will be the same date for each row.</small>
+      <br><br>
+      <strong>Table 2 — <code>FloatRequests</code></strong><br>
+      Columns: <code>Name</code> (text), <code>Email</code> (text), <code>StartDate</code> (date),
+      <code>EndDate</code> (date), <code>Status</code> (text), <code>Note</code> (text)
+      <br><br>
+      <strong>Table 3 — <code>QuarterState</code></strong><br>
+      Columns: <code>Quarter</code> (text), <code>Phase</code> (text), <code>JohnDone</code> (text),
+      <code>RichDone</code> (text), <code>GregDone</code> (text)
+      <br><br>
+      <strong>Table 4 — <code>Config</code></strong><br>
+      Columns: <code>Key</code> (text), <code>Value</code> (text)<br>
+      Add one row: Key = <code>StartDate</code>, Value = <code>2026-08-01</code>
+    </div>
+  </div>
+  <button class="btn primary" style="width:100%;padding:12px;font-size:15px" onclick="saveConfig()">
+    Connect and continue
+  </button>
+  <div class="err" id="cfg-err" style="display:none;text-align:center;margin-top:.5rem"></div>
+</div>
+
+<!-- ── Login screen ── -->
+<div id="login-screen" style="display:none">
+  <h1>Vacation Home</h1>
+  <p style="color:var(--text2);margin-bottom:1.25rem">Enter your name and password.</p>
+  <div class="field" style="margin-bottom:.6rem">
+    <input type="text" id="login-name" placeholder="Name" autocomplete="username"
+      style="font-size:16px;padding:10px 12px;width:100%;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+  </div>
+  <div class="field" style="margin-bottom:.9rem">
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password"
+      style="font-size:16px;padding:10px 12px;width:100%;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')loginByName()">
+  </div>
+  <button id="login-submit-btn" class="btn primary" style="width:100%;padding:12px;font-size:15px;margin-bottom:.5rem" onclick="loginByName()">Log in</button>
+  <div id="login-loading" style="display:none;font-size:12px;color:var(--text3);text-align:center;margin-bottom:.5rem">Loading users…</div>
+  <div class="err" id="login-err" style="display:none;margin-bottom:1rem;text-align:center"></div>
+  <br>
+  <button class="btn" style="width:100%;font-size:12px;color:var(--text3)" onclick="showSetup()">Change Coda connection</button>
+  <br>
+  <button class="btn" style="width:100%;font-size:12px;color:var(--amber)" onclick="runDiagnostic()">&#128269; Run diagnostics</button>
+  <pre id="diag-out" style="display:none;margin-top:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);font-size:11px;white-space:pre-wrap;word-break:break-all;text-align:left;max-height:320px;overflow-y:auto;color:var(--text)"></pre>
+</div>
+
+<!-- ── App shell ── -->
+<div id="app-shell">
+  <header>
+    <div class="header-left">
+      <h2>Vacation Home</h2>
+      <span class="who-badge" id="who-badge"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="tabs" id="tab-bar"></div>
+      <button class="btn" style="font-size:12px" onclick="logout()">Switch user</button>
+    </div>
+  </header>
+  <main>
+    <div id="view-calendar">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:600;color:var(--text2)">Quarter</label>
+        <select id="quarter-select" onchange="onQuarterChange()" style="font-size:14px;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text)"></select>
+      </div>
+      <div id="qflow-area" style="margin-bottom:.75rem"></div>
+      <div id="john-sel-bar">
+        <div class="john-bar-count">
+          Selecting John's days: <strong id="john-sel-count">0</strong> / 60 max
+          <span id="john-sel-remaining">60 remaining</span>
+        </div>
+        <div class="john-bar-err" id="john-err"></div>
+        <button class="btn" onclick="johnCancelSelection()">Cancel</button>
+        <button class="btn primary" id="john-confirm-btn" onclick="johnConfirm()" disabled>Save selection</button>
+      </div>
+      <div id="user-sel-bar">
+        <div class="john-bar-count">
+          <span id="user-sel-name"></span> selecting: <strong id="user-sel-count">0</strong> days
+          <span id="user-sel-hint" style="font-size:12px;color:var(--text2)">Click open days to toggle</span>
+        </div>
+        <button class="btn" onclick="userCancelSelection()">Cancel</button>
+        <button class="btn primary" id="user-confirm-btn" onclick="userConfirm()" disabled>Save</button>
+      </div>
+      <div id="cal-action-row" class="action-row" style="display:none"></div>
+      <div class="stats" id="stats-row"></div>
+      <div class="legend" id="legend"></div>
+      <div class="cal-nav">
+        <button onclick="prevMonth()" aria-label="Previous">‹</button>
+        <div class="cal-month" id="month-label"></div>
+        <button onclick="nextMonth()" aria-label="Next">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div id="admin-content"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Float request modal ── -->
+<div class="overlay" id="req-modal" style="display:none">
+  <div class="modal">
+    <h3>Request a floating stay</h3>
+    <div class="form-row"><label>Your name *</label><input type="text" id="req-name" placeholder="Full name"></div>
+    <div class="form-row"><label>Email (optional)</label><input type="email" id="req-email" placeholder="you@example.com"></div>
+    <div class="form-row"><label>Check-in date *</label><input type="date" id="req-start" min="2026-08-01"></div>
+    <div class="form-row"><label>Check-out date *</label><input type="date" id="req-end" min="2026-08-01"></div>
+    <div class="form-row"><label>Note for John</label><textarea id="req-note" placeholder="Any context..."></textarea></div>
+    <div class="err" id="req-err" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('req-modal')">Cancel</button>
+      <button class="btn primary" onclick="submitFloatRequest()">Submit request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Block picker modal (Rich/Greg) ── -->
+<div class="overlay" id="block-modal" style="display:none">
+  <div class="modal">
+    <h3 id="block-modal-title">Choose your fixed block</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem" id="block-modal-sub"></p>
+    <div id="block-modal-body"></div>
+    <div class="err" id="block-err" style="display:none"></div>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal('block-modal')">Cancel</button>
+      <button class="btn primary" id="block-confirm-btn" onclick="confirmBlock()">Confirm block</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════════
+// CONFIG & PERSISTENCE
+// ════════════════════════════════════════════════════════
+const LS_CONFIG = 'vhc_config';
+let cfg = { token: '', docId: '' };
+let currentUser = null;
+
+function loadConfig() {
+  try {
+    const h = location.hash.slice(1);
+    if (h) { const p = JSON.parse(atob(h)); if (p.token && p.docId) { cfg = p; return; } }
+  } catch(e) {}
+  try { const s = localStorage.getItem(LS_CONFIG); if (s) cfg = JSON.parse(s); } catch(e) {}
+}
+function saveConfig() {
+  const token = document.getElementById('cfg-token').value.trim();
+  const docId  = document.getElementById('cfg-doc').value.trim();
+  if (!token || !docId) { showErr('cfg-err', 'Please fill in both fields.'); return; }
+  cfg = { token, docId };
+  try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); } catch(e) {}
+  try { history.replaceState(null, '', '#' + btoa(JSON.stringify(cfg))); } catch(e) {}
+  Object.keys(tableIds).forEach(k => delete tableIds[k]);
+  showLogin();
+}
+function showSetup() {
+  document.getElementById('setup-screen').style.display = '';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('cfg-token').value = cfg.token || '';
+  document.getElementById('cfg-doc').value = cfg.docId || '';
+}
+async function showLogin() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('app-shell').style.display = 'none';
+  // Always reset button state in case it was left disabled
+  const btn = document.getElementById('login-submit-btn');
+  const hint = document.getElementById('login-loading');
+  if (btn) { btn.disabled = false; btn.textContent = 'Log in'; }
+  if (hint) hint.style.display = 'none';
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-pass').value = '';
+  const errEl = document.getElementById('login-err');
+  if (errEl) errEl.style.display = 'none';
+  // Load users if needed
+  if (cfg.token && cfg.docId) {
+    if (btn) btn.disabled = true;
+    if (hint) hint.style.display = '';
+    try {
+      await warmTableCache();
+      users = (await getRows('Users')).filter(r => r.Name);
+    } catch(e) {
+      if (errEl) { errEl.textContent = 'Could not load users: ' + e.message; errEl.style.display = 'block'; }
+    } finally {
+      if (btn) btn.disabled = false;
+      if (hint) hint.style.display = 'none';
+    }
+  }
+}
+function logout() { currentUser = null; johnSelecting = null; userSelecting = null; showLogin(); }
+
+async function runDiagnostic() {
+  const out = document.getElementById('diag-out');
+  out.style.display = 'block';
+  out.textContent = 'Running...\n';
+  const log = msg => { out.textContent += msg + '\n'; };
+  try {
+    const doc = await codaReq('GET', `/docs/${cfg.docId}`);
+    log('OK doc: ' + doc.name);
+  } catch(e) { log('FAIL doc: ' + e.message); return; }
+  let tables;
+  try {
+    const data = await codaReq('GET', `/docs/${cfg.docId}/tables`);
+    tables = data.items;
+    log('OK tables: ' + tables.map(t => t.name).join(', '));
+  } catch(e) { log('FAIL tables: ' + e.message); return; }
+  for (const name of ['Reservations','FloatRequests','QuarterState','Config']) {
+    const t = tables.find(t => t.name === name);
+    if (!t) { log('MISSING table: ' + name); continue; }
+    try {
+      const cols = await codaReq('GET', `/docs/${cfg.docId}/tables/${t.id}/columns`);
+      const rows = await codaReq('GET', `/docs/${cfg.docId}/tables/${t.id}/rows?limit=1`);
+      let sample = '(empty)';
+      if (rows.items.length) {
+        const r = rows.items[0];
+        const mapped = {};
+        for (const [cid, v] of Object.entries(r.values)) {
+          const col = cols.items.find(c => c.id === cid);
+          mapped[col ? col.name : cid] = v;
+        }
+        sample = JSON.stringify(mapped);
+      }
+      log('OK ' + name + ' cols:[' + cols.items.map(c=>c.name).join(',') + '] row:' + sample);
+    } catch(e) { log('FAIL ' + name + ': ' + e.message); }
+  }
+  log('Done.');
+}
+
+// ════════════════════════════════════════════════════════
+// CODA API
+// ════════════════════════════════════════════════════════
+const BASE = 'https://coda.io/apis/v1';
+let tableIds = {};
+
+async function codaReq(method, path, body) {
+  const res = await fetch(BASE + path, {
+    method,
+    headers: { 'Authorization': 'Bearer ' + cfg.token, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error(`Coda API ${res.status}: ${t}`); }
+  return method === 'DELETE' ? null : res.json();
+}
+
+// Pre-warm: fetch all table IDs in one call
+async function warmTableCache() {
+  if (Object.keys(tableIds).length > 0) return; // already warm
+  const data = await codaReq('GET', `/docs/${cfg.docId}/tables`);
+  for (const t of data.items) tableIds[t.name] = t.id;
+}
+
+async function getTableId(tableName) {
+  if (tableIds[tableName]) return tableIds[tableName];
+  await warmTableCache();
+  if (!tableIds[tableName]) throw new Error(`Table "${tableName}" not found in doc.`);
+  return tableIds[tableName];
+}
+
+// getRows uses ?useColumnNames=true — Coda returns named keys directly, no column fetch needed
+async function getRows(tableName) {
+  const tid = await getTableId(tableName);
+  const rows = [];
+  let pageToken = null;
+  do {
+    const url = `/docs/${cfg.docId}/tables/${tid}/rows?limit=500&useColumnNames=true${pageToken ? '&pageToken=' + pageToken : ''}`;
+    const data = await codaReq('GET', url);
+    rows.push(...data.items);
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+  return rows.map(r => {
+    const obj = { _id: r.id };
+    for (const [k, v] of Object.entries(r.values)) obj[k] = v;
+    return obj;
+  });
+}
+
+async function addRow(tableName, cells) {
+  return addRows(tableName, [cells]);
+}
+
+async function addRows(tableName, cellsArray) {
+  if (!cellsArray.length) return [];
+  const tid = await getTableId(tableName);
+  const ids = [];
+  for (let i = 0; i < cellsArray.length; i += 500) {
+    const batch = cellsArray.slice(i, i + 500);
+    const res = await codaReq('POST', `/docs/${cfg.docId}/tables/${tid}/rows`, {
+      rows: batch.map(cells => ({
+        cells: Object.entries(cells).map(([col, val]) => ({ column: col, value: val }))
+      }))
+    });
+    if (res && res.addedRowIds) ids.push(...res.addedRowIds);
+  }
+  return ids;
+}
+
+async function deleteRows(tableName, rowIds) {
+  if (!rowIds.length) return;
+  const tid = await getTableId(tableName);
+  // Coda batch delete: DELETE /rows with rowIds in body
+  for (let i = 0; i < rowIds.length; i += 500) {
+    const batch = rowIds.slice(i, i + 500);
+    await codaReq('DELETE', `/docs/${cfg.docId}/tables/${tid}/rows`, { rowIds: batch });
+  }
+}
+
+async function updateRow(tableName, rowId, cells) {
+  const tid = await getTableId(tableName);
+  return codaReq('PUT', `/docs/${cfg.docId}/tables/${tid}/rows/${rowId}`, {
+    row: { cells: Object.entries(cells).map(([col, val]) => ({ column: col, value: val })) }
+  });
+}
+
+// ════════════════════════════════════════════════════════
+// DATE HELPERS
+// ════════════════════════════════════════════════════════
+const START_DATE = new Date(2026, 7, 1);
+const TODAY = new Date(2026, 5, 12);
+
+function dStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fromStr(s) {
+  if (!s) return null;
+  const p = s.includes('T') ? s.slice(0,10) : s;
+  const [y,m,d] = p.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function dateRange(s, e) {
+  const days = []; let c = new Date(s);
+  while (c <= e) { days.push(dStr(c)); c = addDays(c,1); }
+  return days;
+}
+function nextSaturday(d) { const r = new Date(d); while(r.getDay()!==6) r.setDate(r.getDate()+1); return r; }
+function gcWeekend(year, month0) {
+  const d = new Date(year, month0, 1);
+  while(d.getDay()!==6) d.setDate(d.getDate()+1);
+  return [dStr(d), dStr(addDays(d,1))];
+}
+function quarterKey(year, q) { return `${year}-Q${q}`; }
+function quarterMonths(q) { return [[0,1,2],[3,4,5],[6,7,8],[9,10,11]][q-1]; }
+function quarterStart(year, q) { return new Date(year, quarterMonths(q)[0], 1); }
+function quarterEnd(year, q)   { const m = quarterMonths(q); return new Date(year, m[2]+1, 0); }
+function fmtDate(s) { return fromStr(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtRange(s,e) { return fmtDate(s)+' – '+fmtDate(e); }
+function getQuarterOf(ds) {
+  const d = fromStr(ds);
+  const y = d.getFullYear(), m = d.getMonth();
+  const q = Math.floor(m/3)+1;
+  return quarterKey(y, q);
+}
+
+// GC weekends removed
+const GC_WEEKENDS = {};
+
+// ════════════════════════════════════════════════════════
+// APP STATE
+// ════════════════════════════════════════════════════════
+let reservations = [];   // from Coda Reservations table
+let floatRequests = [];
+let users = [];  // from Coda FloatRequests table
+let quarterStates = {};  // quarterKey -> { phase, JohnDone, RichDone, GregDone, _id }
+let johnSelecting = null;  // { quarter, selected: Set<ds> }
+let userSelecting  = null;  // { quarter, selected: Set<ds> }
+let blockPicking = null;  // { user, quarter, blockNum, start, end }
+
+let curYear = 2026, curMonth = 7; // August (0-indexed) — updated to match new START_DATE
+let activeTab = 'calendar';
+let selectedQuarter = null; // e.g. '2026-Q3'
+
+function allQuarters() {
+  const out = [];
+  const aheadDate = addDays(TODAY, 548); // ~18 months out
+  let cy = START_DATE.getFullYear(), cq = Math.floor(START_DATE.getMonth()/3)+1;
+  const ey = aheadDate.getFullYear(), eq = Math.floor(aheadDate.getMonth()/3)+1;
+  while (cy < ey || (cy === ey && cq <= eq)) {
+    out.push({ y:cy, q:cq, qk:quarterKey(cy,cq) });
+    cq++; if (cq>4){cq=1;cy++;}
+  }
+  return out;
+}
+
+function allQuartersExtended() {
+  // Base 18-month list plus any already-activated quarters beyond that
+  const base = allQuarters();
+  const baseKeys = new Set(base.map(q => q.qk));
+  const extra = Object.keys(quarterStates)
+    .filter(qk => !baseKeys.has(qk) && quarterStates[qk]._id)
+    .map(qk => {
+      const [y, qn] = qk.split('-Q').map(Number);
+      return { y, q: qn, qk };
+    })
+    .sort((a,b) => a.qk.localeCompare(b.qk));
+  return [...base, ...extra];
+}
+
+function quarterOptionLabel(y, q) {
+  const qs = quarterStart(y,q), qe = quarterEnd(y,q);
+  const activated = quarterStates[quarterKey(y,q)] && quarterStates[quarterKey(y,q)]._id;
+  const tag = activated ? '' : ' — not active';
+  return `${y} Q${q} (${qs.toLocaleDateString('en-US',{month:'short'})}–${qe.toLocaleDateString('en-US',{month:'short'})})${tag}`;
+}
+
+function populateQuarterSelect() {
+  const sel = document.getElementById('quarter-select');
+  if (!sel) return;
+  const quarters = allQuartersExtended();
+  sel.innerHTML = quarters.map(({y,q,qk}) =>
+    `<option value="${qk}">${quarterOptionLabel(y,q)}</option>`
+  ).join('');
+  if (isOwnerOrContrib()) {
+    // Add a "New quarter +" option at the end
+    sel.innerHTML += `<option value="__new__">+ Add next quarter…</option>`;
+  }
+  const prev = selectedQuarter && quarters.find(q => q.qk === selectedQuarter);
+  const match = prev || quarters[0];
+  sel.value = match.qk;
+  const wasSelected = selectedQuarter;
+  selectedQuarter = match.qk;
+  // Only reset calendar position when the quarter actually changes
+  if (!wasSelected || wasSelected !== match.qk) {
+    const qMonths = quarterMonths(match.q);
+    const firstVisible = qMonths.find(m => new Date(match.y, m+1, 0) >= START_DATE) ?? qMonths[0];
+    curYear = match.y; curMonth = firstVisible;
+  }
+}
+
+function onQuarterChange() {
+  const sel = document.getElementById('quarter-select');
+  if (sel.value === '__new__') {
+    // Find the quarter after the last one in the list
+    const quarters = allQuartersExtended();
+    const last = quarters[quarters.length - 1];
+    let ny = last.y, nq = last.q + 1;
+    if (nq > 4) { nq = 1; ny++; }
+    const newQk = quarterKey(ny, nq);
+    // Add it to the select and switch to it
+    const opt = document.createElement('option');
+    opt.value = newQk;
+    opt.textContent = quarterOptionLabel(ny, nq);
+    sel.insertBefore(opt, sel.lastElementChild); // before the __new__ option
+    sel.value = newQk;
+    selectedQuarter = newQk;
+    // Jump calendar
+    const qms = quarterMonths(nq);
+    curYear = ny; curMonth = qms[0];
+    renderAll();
+    return;
+  }
+  selectedQuarter = sel.value;
+  // Cancel any in-progress selection for a different quarter
+  if (johnSelecting && johnSelecting.quarter !== selectedQuarter) {
+    johnSelecting = null;
+    document.getElementById('john-sel-bar').classList.remove('active');
+  }
+  if (userSelecting && userSelecting.quarter !== selectedQuarter) {
+    userSelecting = null;
+    document.getElementById('user-sel-bar').classList.remove('active');
+  }
+  const parts = selectedQuarter.split('-Q');
+  const qy = parseInt(parts[0]), qq = parseInt(parts[1]);
+  curYear = qy;
+  const qms = quarterMonths(qq);
+  curMonth = qms.find(m => new Date(qy, m+1, 0) >= START_DATE) ?? qms[0];
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════════
+// DATA LOAD
+// ════════════════════════════════════════════════════════
+async function loadAll() {
+  try {
+    await warmTableCache(); // one /tables call, then all getRows skip it
+    const [resRows, frRows, qsRows, userRows] = await Promise.all([
+      getRows('Reservations'),
+      getRows('FloatRequests'),
+      getRows('QuarterState'),
+      getRows('Users').catch(() => []),
+    ]);
+    reservations = resRows;
+    floatRequests = frRows;
+    quarterStates = {};
+    for (const r of qsRows) {
+      if (!r.Quarter) continue;
+      quarterStates[r.Quarter.trim()] = { _id: r._id, phase: r.Phase || 'A' };
+    }
+    users = userRows.filter(r => r.Name);
+  } catch(e) {
+    document.getElementById('cal-grid').innerHTML =
+      `<div class="loading-bar" style="grid-column:1/-1;color:var(--red)">
+        <strong>Error loading from Coda:</strong> ${e.message}<br>
+        <small>Check token, Doc ID, and that all four tables exist with exact column names.</small>
+      </div>`;
+  }
+}
+
+function getQState(qk) {
+  return quarterStates[qk] || { phase: 'A' };
+}
+
+async function ensureQState(qk) {
+  // Already in memory with an ID — use it directly
+  if (quarterStates[qk] && quarterStates[qk]._id) return quarterStates[qk];
+  // Create the row — addRows returns the new row ID directly from Coda's response
+  const ids = await addRows('QuarterState', [{ Quarter: qk, Phase: 'A' }]);
+  const newId = ids && ids[0];
+  if (!newId) throw new Error(`Coda did not return an ID for the new QuarterState row. Check that the Quarter column exists and is Text type.`);
+  quarterStates[qk] = { _id: newId, phase: 'A' };
+  return quarterStates[qk];
+}
+
+// ════════════════════════════════════════════════════════
+// DAY MAP — derive from reservations
+// ════════════════════════════════════════════════════════
+function buildDayMap() {
+  const map = {};
+
+  // GC weekends
+  for (const [ds, v] of Object.entries(GC_WEEKENDS)) {
+    map[ds] = { type: 'gc_' + v.owner.toLowerCase(), label: v.label, owner: v.owner };
+  }
+
+  // Reservations from Coda
+  for (const r of reservations) {
+    if (!r.StartDate || !r.EndDate || r.Status === 'denied') continue;
+    const s = fromStr(r.StartDate), e = fromStr(r.EndDate);
+    if (!s || !e) continue;
+    dateRange(s, e).forEach(ds => {
+      if (GC_WEEKENDS[ds]) return; // GC always wins
+      let type, label;
+      if (r.Type === 'floating') {
+        type  = r.Status === 'approved' ? 'float_approved' : 'float_pending';
+        label = r.Status === 'pending' ? r.Owner + ' (pending)' : r.Owner;
+      } else {
+        // fixed — pick pill colour by owner; unknown owners get a generic reserved colour
+        const ownerKey = (r.Owner || '').toLowerCase();
+        type  = ownerKey === 'john' ? 'john_fixed'
+               : ownerKey === 'rich' ? 'rich_fixed'
+               : ownerKey === 'greg' ? 'greg_fixed'
+               : 'rich_fixed'; // fallback — shows as reserved, not Open
+        label = r.Owner;
+      }
+      map[ds] = { type, label, owner: r.Owner, _resId: r._id, status: r.Status };
+    });
+  }
+
+  // Float requests
+  for (const r of floatRequests) {
+    if (!r.StartDate || !r.EndDate) continue;
+    const s = fromStr(r.StartDate), e = fromStr(r.EndDate);
+    if (!s || !e) continue;
+    if (r.Status === 'approved') {
+      dateRange(s, e).forEach(ds => {
+        if (!GC_WEEKENDS[ds]) map[ds] = { type: 'float_approved', label: r.Name, owner: r.Name };
+      });
+    } else if (r.Status === 'pending' || !r.Status) {
+      dateRange(s, e).forEach(ds => {
+        if (!GC_WEEKENDS[ds] && !map[ds]) map[ds] = { type: 'float_pending', label: 'Pending', owner: r.Name };
+      });
+    }
+  }
+
+  return map;
+}
+
+// ════════════════════════════════════════════════════════
+// PHASE LOGIC  A=John only  B=Owners  C=Open
+// ════════════════════════════════════════════════════════
+function getPhase(qk) {
+  return (getQState(qk).phase || 'A').toUpperCase();
+}
+function phaseLabel(p) {
+  return { A:'🏠 John picks first', B:'👥 Contributors picking', C:'🌐 Open to all' }[p] || p;
+}
+// Get fixed-day quota for a named user from the Users table
+function getUserQuota(name) {
+  const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === (name || '').toLowerCase());
+  if (!u) return 60; // default
+  const dpq = parseInt(u.DaysPerQuarter);
+  return isNaN(dpq) ? 60 : dpq;
+}
+
+function canSelect(qk) {
+  const ph = getPhase(qk);
+  if (ph === 'A') return isOwner();
+  if (ph === 'B') return isOwner();
+  return true; // C — anyone
+}
+
+// ════════════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════════════
+function userClass(who) {
+  return ['John','Rich','Greg'].includes(who) ? who.toLowerCase() : 'guest';
+}
+function userRole() {
+  const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase());
+  return u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
+}
+function isOwner()       { return userRole() === 'owner'; }
+function isContributor() { return userRole() === 'contributor'; }
+function isOwnerOrContrib() { return isOwner() || isContributor(); }
+
+function loginByName() {
+  const name = (document.getElementById('login-name').value || '').trim();
+  const pass = (document.getElementById('login-pass').value || '').trim();
+  if (!name) { showErr('login-err', 'Please enter your name.'); return; }
+  const user = users.find(u => u.Name && u.Name.trim().toLowerCase() === name.toLowerCase());
+  if (!user) { showErr('login-err', 'Name not recognized. Ask Rich to add you in Coda.'); return; }
+  if (user.Password && user.Password.trim() !== pass) {
+    showErr('login-err', 'Incorrect password.'); return;
+  }
+  login(user.Name); // always use canonical Name from Coda, not what user typed
+}
+
+async function login(who) {
+  currentUser = who;
+  johnSelecting = null;
+  userSelecting  = null;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  const badge = document.getElementById('who-badge');
+  badge.textContent = who;
+  badge.className = 'who-badge ' + userClass(who);
+  // admin tab removed — content is inline below calendar
+  showSpinner();
+  try { await loadAll(); } catch(e) { return; }
+  populateQuarterSelect();
+  renderAll();
+}
+
+function showSpinner() {
+  document.getElementById('cal-grid').innerHTML =
+    '<div class="loading-bar" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════
+const PILL_STYLES = {
+  rich_fixed:     'background:var(--rich-bg);color:var(--rich-text);border-color:var(--rich-bd)',
+  greg_fixed:     'background:var(--greg-bg);color:var(--greg-text);border-color:var(--greg-bd)',
+  john_fixed:     'background:var(--john-bg);color:var(--john-text);border-color:var(--john-bd)',
+  floating_open:  'background:var(--float-bg);color:var(--float-text);border-color:var(--float-bd)',
+  float_approved: 'background:var(--appr-bg);color:var(--appr-text);border-color:var(--appr-bd)',
+  float_pending:  'background:var(--pend-bg);color:var(--pend-text);border-color:var(--pend-bd)',
+  unallocated:    'background:var(--surface2);color:var(--text3);border-color:var(--border2)',
+};
+
+function refreshQuarterOptions() {
+  // Update option labels without changing selection or calendar position
+  const sel = document.getElementById('quarter-select');
+  if (!sel) return;
+  const quarters = allQuartersExtended();
+  Array.from(sel.options).forEach(opt => {
+    if (opt.value === '__new__' || !opt.value.includes('-Q')) return;
+    const [y, q] = opt.value.split('-Q').map(Number);
+    opt.textContent = quarterOptionLabel(y, q);
+  });
+}
+
+function renderAll() {
+  if (!selectedQuarter) populateQuarterSelect();
+  refreshQuarterOptions(); // update "not active" labels without resetting position
+  renderQFlow();
+  renderStats();
+  renderLegend();
+  renderCalendar();
+  renderAdmin();
+}
+
+function renderQFlow() {
+  const area = document.getElementById('qflow-area');
+  const actionRow = document.getElementById('cal-action-row');
+  if (!selectedQuarter) return;
+
+  const parts = selectedQuarter.split('-Q');
+  const y = parseInt(parts[0]), q = parseInt(parts[1]);
+  const qk = selectedQuarter;
+  const qs = getQState(qk);
+
+  // Quarter not yet activated — no QuarterState row exists
+  if (!qs._id) {
+    const canActivate = isOwner() || isContributor();
+    area.innerHTML = `<div class="qflow">
+      <div class="phase-steps"><span class="phase-step">Not yet active</span></div>
+      <div class="info-box">This quarter hasn’t been opened yet.${canActivate ? ' Activate it to begin the selection process.' : ' An owner or contributor will activate it when ready.'}</div>
+    </div>`;
+    actionRow.innerHTML = canActivate
+      ? `<button class="btn primary" onclick="activateQuarter('${qk}')">Activate quarter</button>`
+      : '';
+    actionRow.style.display = canActivate ? 'flex' : 'none';
+    return;
+  }
+
+  const phase = getPhase(qk);
+  const qLabel = `${y} Q${q} (${quarterStart(y,q).toLocaleDateString('en-US',{month:'short'})} – ${quarterEnd(y,q).toLocaleDateString('en-US',{month:'short', year:'numeric'})})`;
+
+  const steps = [
+    { key:'A', label:'John first' },
+    { key:'B', label:'Contributors' },
+    { key:'C', label:'Open to all' },
+  ];
+  const phaseOrder = ['A','B','C'];
+  const curIdx = phaseOrder.indexOf(phase);
+  const stepsHTML = steps.map((s,i) => {
+    const cls = i < curIdx ? 'done' : i === curIdx ? 'active' : '';
+    return `<span class="phase-step ${cls}">${s.label}</span>`;
+  }).join('');
+
+  let msgHTML = '';
+  let actionHTML = '';
+  const isJohn = isOwner();
+  const isSelecting = johnSelecting && johnSelecting.quarter === qk;
+
+  if (phase === 'A') {
+    if (isJohn) {
+      msgHTML = `<div class="info-box purple">${isSelecting ? 'Click days on the calendar to select.' : 'John\u2019s turn to pick days. Only you can select right now.'}</div>`;
+      if (!isSelecting) {
+        actionHTML = `<button class="btn primary" onclick="openJohnModal('${qk}')">Select my days</button>
+                      <button class="btn" onclick="advancePhase('${qk}','B')">Open to contributors →</button>`;
+      } else {
+        actionHTML = `<button class="btn" disabled>Select my days</button>
+                      <button class="btn" onclick="advancePhase('${qk}','B')">Open to contributors →</button>`;
+      }
+    } else {
+      msgHTML = `<div class="info-box">John is picking his days. Check back once he opens it up.</div>`;
+    }
+  } else if (phase === 'B') {
+    const isUserSel = userSelecting && userSelecting.quarter === qk;
+    if (isJohn) {
+      const sel = isSelecting ? 'Click days on the calendar to adjust.' : 'Contributors can now pick too. You can still adjust your days.';
+      msgHTML = `<div class="info-box purple">${sel}</div>`;
+      if (!isSelecting) {
+        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to John first</button>
+                      <button class="btn" onclick="openJohnModal('${qk}')">Adjust my days</button>
+                      <button class="btn success" onclick="advancePhase('${qk}','C')">Open to all →</button>`;
+      } else {
+        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to John first</button>
+                      <button class="btn" disabled>Adjust my days</button>
+                      <button class="btn success" onclick="advancePhase('${qk}','C')">Open to all →</button>`;
+      }
+    } else if (isContributor()) {
+      msgHTML = `<div class="info-box blue">${isUserSel ? 'Click days on the calendar.' : 'Select your days for this quarter.'}</div>`;
+      if (!isUserSel) actionHTML = `<button class="btn primary" onclick="openUserSelection('${qk}')">Select my days</button>`;
+      else actionHTML = `<button class="btn" disabled>Select my days</button>`;
+    } else {
+      msgHTML = `<div class="info-box">Contributors are selecting their days. Check back soon.</div>`;
+    }
+  } else {
+    const isUserSel = userSelecting && userSelecting.quarter === qk;
+    msgHTML = `<div class="info-box green">${isUserSel ? 'Click days on the calendar.' : 'Select your days or request a floating stay.'}</div>`;
+    if (!isUserSel) {
+      actionHTML = `<button class="btn primary" onclick="openUserSelection('${qk}')">Select my days</button>`;
+    } else {
+      actionHTML = `<button class="btn" disabled>Select my days</button>`;
+    }
+    // Back to B always visible for John in phase C, regardless of selection state
+    if (isJohn) {
+      actionHTML = (actionHTML || '') + ` <button class="btn amber" onclick="advancePhase('${qk}','B')">← Contributors only</button>`;
+    }
+  }
+
+  area.innerHTML = `<div class="qflow">
+    <div class="phase-steps" style="margin-bottom:.75rem">${stepsHTML}</div>
+    ${msgHTML}
+  </div>`;
+
+  actionRow.innerHTML = actionHTML;
+  actionRow.style.display = actionHTML ? 'flex' : 'none';
+}
+
+function renderCalendar() {
+  const first = new Date(curYear, curMonth, 1);
+  const last  = new Date(curYear, curMonth+1, 0);
+  document.getElementById('month-label').textContent =
+    first.toLocaleDateString('en-US', {month:'long', year:'numeric'});
+
+  const dayMap = buildDayMap();
+  const days = [];
+  const sw = first.getDay();
+  for (let i = sw-1; i >= 0; i--) days.push({ d: addDays(first,-i-1), other:true });
+  for (let d=new Date(first); d<=last; d=addDays(d,1)) days.push({d:new Date(d),other:false});
+  while (days.length%7!==0) days.push({d:addDays(last,days.length-sw-last.getDate()+1),other:true});
+
+  // John selecting mode
+  const johnSel = johnSelecting;
+
+  let html = '';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(h => {
+    html += `<div class="day-hdr">${h}</div>`;
+  });
+
+  days.forEach(({d, other}) => {
+    const ds = dStr(d);
+    const isToday = ds === dStr(TODAY);
+    const preOpen = d < START_DATE;
+    const qk = selectedQuarter;
+
+    // When John is selecting, suppress his own days from dayMap so the
+    // selection set is the single source of truth for display & clicking.
+    // When a user is selecting, suppress their own days similarly.
+    let rawDisp = !other ? dayMap[ds] : null;
+    const inJohnSel = johnSel && johnSel.quarter === getQuarterOf(ds) && rawDisp && rawDisp.owner === 'John';
+    const inUserSel = userSelecting && userSelecting.quarter === getQuarterOf(ds) && rawDisp && rawDisp.owner === currentUser;
+    const disp = (inJohnSel || inUserSel) ? null : rawDisp;
+
+    const isJohnSelected   = johnSel && johnSel.selected.has(ds);
+    // John selectable = in his quarter AND the day is either his or unoccupied
+    const isJohnSelectable = johnSel && !other && !preOpen &&
+      getQuarterOf(ds) === johnSel.quarter &&
+      (!rawDisp || rawDisp.owner === 'John');
+
+    // User selectable = in their quarter AND day is unoccupied (not someone else's)
+    const isUserSelectable = userSelecting && !other && !preOpen &&
+      getQuarterOf(ds) === userSelecting.quarter && !disp;
+    const isUserSelected   = userSelecting && userSelecting.selected.has(ds);
+
+    // Contributor quota: track how many fixed slots remain
+    // userSelecting.ordered is an array preserving insertion order
+    let isOverQuota = false;
+    if (isUserSelected) {
+      const u2 = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
+      const r2 = u2 ? (u2.Role || 'guest').toLowerCase().trim() : 'guest';
+      const dispQuota = (r2 === 'contributor' || r2 === 'owner') ? getUserQuota(currentUser) : null;
+      if (dispQuota !== null) {
+        const selArr = userSelecting.ordered || [...userSelecting.selected];
+        const pos = selArr.indexOf(ds);
+        isOverQuota = pos >= dispQuota;
+      }
+    }
+
+    // Release only applies when NOT in selection mode for that owner
+    const isMyReservation  = !isJohnSelectable && !isUserSelectable &&
+      rawDisp && rawDisp.owner === currentUser && !other && !preOpen;
+
+    let cls = 'day-cell';
+    if (other) cls += ' other';
+    else if (preOpen) cls += ' pre-open';
+    if (isToday) cls += ' today';
+    if (isJohnSelectable) cls += ' selectable';
+    if (isJohnSelected)   cls += ' selected-mine';
+    if (isUserSelected)   cls += ' selected-mine';
+    if (isOverQuota)      cls += ' over-quota';
+    if (isMyReservation)  cls += ' mine-releasable';
+    if (isUserSelectable) cls += ' user-selectable';
+
+    let pill = '';
+    if (isJohnSelected && !other) {
+      pill = `<span class="pill" style="background:var(--john-bg);color:var(--john-text);border-color:var(--john-bd)">John ✓</span>`;
+    } else if (isUserSelected && !other) {
+      if (isOverQuota) {
+        pill = `<span class="pill" style="background:var(--amber);color:#fff;border-color:var(--amber)">${currentUser} ~ float</span>`;
+      } else {
+        pill = `<span class="pill" style="background:var(--rich-bg);color:var(--rich-text);border-color:var(--rich-bd)">${currentUser} ✓</span>`;
+      }
+    } else if (disp && !other) {
+      const st = PILL_STYLES[disp.type] || PILL_STYLES.unallocated;
+      const relIcon = isMyReservation ? ' ×' : '';
+      pill = `<span class="pill" style="${st}">${disp.label}${relIcon}</span>`;
+    } else if (!other && !preOpen && !disp) {
+      const isPhaseC = getPhase(getQuarterOf(ds)) === 'C';
+      if (isPhaseC) {
+        pill = `<span class="pill" style="${PILL_STYLES.float_pending}">Float</span>`;
+      } else {
+        pill = `<span class="pill" style="${PILL_STYLES.unallocated}">Open</span>`;
+      }
+    }
+
+    let click = '';
+    if (isJohnSelectable)      click = `onclick="toggleJohnDay('${ds}')"`;
+    else if (isUserSelectable) click = `onclick="toggleUserDay('${ds}')"`;
+    else if (isMyReservation)  click = `onclick="releaseDay('${ds}')"`;
+    html += `<div class="${cls}" ${click}><span class="day-num">${d.getDate()}</span>${pill}</div>`;
+  });
+
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function renderStats() {
+  const qk = selectedQuarter;
+  const y  = curYear;
+
+  function tally(owner, type, status, scope) {
+    return reservations.filter(r => {
+      if (r.Owner !== owner) return false;
+      if (type   && r.Type   !== type)   return false;
+      if (status && r.Status !== status) return false;
+      const ds = r.StartDate ? r.StartDate.slice(0, 10) : '';
+      if (scope === 'quarter') return r.Quarter === qk;
+      if (scope === 'year')    return ds.startsWith(String(y));
+      return false;
+    }).length;
+  }
+
+  // All owners+contributors from users table; fall back to hardcoded trio
+  const ownerNames = users.filter(u => u.Role && ['owner','contributor'].includes(u.Role.toLowerCase().trim()))
+    .map(u => u.Name);
+  const people = ownerNames.length
+    ? ownerNames.map(n => {
+        const col = n.toLowerCase() === 'john' ? 'var(--john)' : n.toLowerCase() === 'rich' ? 'var(--rich)' : n.toLowerCase() === 'greg' ? 'var(--greg)' : 'var(--text)';
+        return { name: n, color: col };
+      })
+    : [{ name:'John', color:'var(--john)' }, { name:'Rich', color:'var(--rich)' }, { name:'Greg', color:'var(--greg)' }];
+
+  const qLabel = qk ? qk.replace('-', ' ') : 'Quarter';
+  const divider = '<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:.5rem 0"></div>';
+
+  // Count how many quarters in year y are >= START_DATE
+  function quartersInYear(yr) {
+    let count = 0;
+    for (let q = 1; q <= 4; q++) {
+      const qEnd = quarterEnd(yr, q);
+      if (qEnd >= START_DATE) count++;
+    }
+    return count;
+  }
+  const yearQuarters = quartersInYear(y);
+
+  // ── Section 1: fixed nights — one card per person ────────────────────────────
+  const fixedCards = people.map(p => {
+    const quota    = getUserQuota(p.name);
+    const yearQuota = quota * yearQuarters;
+    const fixedQ   = tally(p.name, 'fixed', 'confirmed', 'quarter');
+    const fixedY   = tally(p.name, 'fixed', 'confirmed', 'year');
+    const remQ     = Math.max(0, quota - fixedQ);
+    const remY     = Math.max(0, yearQuota - fixedY);
+    return `<div class="stat">
+      <div class="stat-label" style="color:${p.color}">${p.name} — fixed</div>
+      <div class="stat-val" style="font-size:12px;line-height:1.8">
+        <span>${qLabel}: <strong style="color:${p.color}">${fixedQ}</strong> / ${quota}</span>
+        <span style="color:var(--text3)"> · ${remQ} left</span><br>
+        <span>${y}: <strong style="color:${p.color}">${fixedY}</strong> / ${yearQuota}</span>
+        <span style="color:var(--text3)"> · ${remY} left</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── Section 2: float nights — one card per person with any float activity ────
+  const allFloatters = [...new Set(reservations.filter(r => r.Type === 'floating').map(r => r.Owner))];
+  // Include owners/contributors even if no floats yet, then all guests with floats
+  const floatPeople = [
+    ...people,
+    ...allFloatters
+      .filter(name => !people.find(p => p.name === name))
+      .map(name => ({ name, color: 'var(--text)' }))
+  ];
+
+  const floatCards = floatPeople.map(p => {
+    const fApprQ = tally(p.name, 'floating', 'approved', 'quarter');
+    const fPendQ = tally(p.name, 'floating', 'pending',  'quarter');
+    const fApprY = tally(p.name, 'floating', 'approved', 'year');
+    const fPendY = tally(p.name, 'floating', 'pending',  'year');
+    if (!fApprQ && !fPendQ && !fApprY && !fPendY) return '';
+
+    function floatLine(appr, pend, label) {
+      const parts = [];
+      if (appr) parts.push(`<span style="color:var(--appr-text)">${appr} approved</span>`);
+      if (pend)  parts.push(`<span style="color:var(--pend-text)">${pend} pending</span>`);
+      return `<span style="color:var(--text3)">${label}: </span>` + (parts.join(' · ') || '—');
+    }
+
+    return `<div class="stat">
+      <div class="stat-label" style="color:${p.color}">${p.name} — float</div>
+      <div class="stat-val" style="font-size:12px;line-height:1.8">
+        ${floatLine(fApprQ, fPendQ, qLabel)}<br>
+        ${floatLine(fApprY, fPendY, String(y))}
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  document.getElementById('stats-row').innerHTML =
+    fixedCards + divider + (floatCards || '<div class="stat"><div class="stat-label">Float</div><div class="stat-val" style="font-size:12px;color:var(--text3)">None yet</div></div>');
+}
+
+function renderLegend() {
+  const items = [
+    { bg:'var(--john-bg)', bd:'var(--john-bd)', label:"John's days" },
+    { bg:'var(--rich-bg)', bd:'var(--rich-bd)', label:"Rich's days" },
+    { bg:'var(--greg-bg)', bd:'var(--greg-bd)', label:"Greg's days" },
+    { bg:'var(--float-bg)',bd:'var(--float-bd)',label:'Floating' },
+{ bg:'var(--appr-bg)', bd:'var(--appr-bd)', label:'Float approved' },
+    { bg:'var(--pend-bg)', bd:'var(--pend-bd)', label:'Pending' },
+    { bg:'var(--surface2)',bd:'var(--border2)', label:'Open' },
+  ];
+  document.getElementById('legend').innerHTML = items.map(i =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${i.bg};border-color:${i.bd}"></div>${i.label}</div>`
+  ).join('');
+}
+
+function renderAdmin() {
+  const el = document.getElementById('admin-content');
+  if (!isOwner()) { el.innerHTML = ''; return; }
+
+  // Float requests (pending approval)
+  const floatRes = reservations.filter(r => r.Type === 'floating');
+  const pending  = floatRes.filter(r => r.Status === 'pending');
+  const approved = floatRes.filter(r => r.Status === 'approved');
+  const denied   = floatRes.filter(r => r.Status === 'denied');
+
+  function floatCard(r, type) {
+    const actions = type === 'pending'
+      ? `<button class="btn success" style="font-size:12px;padding:5px 11px" onclick="resolveFloat('${r._id}','approved')">Approve</button>
+         <button class="btn danger"  style="font-size:12px;padding:5px 11px" onclick="resolveFloat('${r._id}','denied')">Deny</button>`
+      : `<span class="badge ${type}">${type.charAt(0).toUpperCase()+type.slice(1)}</span>`;
+    return `<div class="req-card">
+      <div class="info">
+        <div class="rname">${r.Owner}</div>
+        <div class="rdates">${fmtDate(r.StartDate)}${r.Note ? ' · ' + r.Note : ''}</div>
+      </div>
+      <div class="actions">${actions}</div>
+    </div>`;
+  }
+
+  // Password management
+  const pwRows = users.map(u => `
+    <div class="password-row">
+      <span class="uname">${u.Name}</span>
+      <input type="password" id="pw-${u._id}" placeholder="new password" autocomplete="new-password">
+      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="setPassword('${u._id}','${u.Name}')">Set</button>
+      <span id="pw-status-${u._id}" style="font-size:12px;color:var(--green);display:none">Saved ✓</span>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div class="admin-section">
+      <h3>Float requests — pending (${pending.length})</h3>
+      ${pending.length ? pending.map(r=>floatCard(r,'pending')).join('') : '<p class="empty">None pending.</p>'}
+    </div>
+    ${approved.length ? `<div class="admin-section">
+      <h3>Float requests — approved</h3>
+      ${approved.map(r=>floatCard(r,'approved')).join('')}
+    </div>` : ''}
+    ${denied.length ? `<div class="admin-section">
+      <h3>Float requests — denied</h3>
+      ${denied.map(r=>floatCard(r,'denied')).join('')}
+    </div>` : ''}
+    <div class="admin-section">
+      <h3>Manage passwords</h3>
+      ${pwRows || '<p class="empty">No users loaded.</p>'}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+// JOHN — DAY SELECTION
+// ════════════════════════════════════════════════════════
+function openJohnModal(qk) {
+  // If already selecting this same quarter, just re-show the bar (preserve selections)
+  if (!johnSelecting || johnSelecting.quarter !== qk) {
+    // Seed with any already-confirmed days for this quarter (so re-opening after partial save works)
+    const alreadySaved = new Set();
+    reservations.filter(r => r.Owner === 'John' && r.Quarter === qk).forEach(r => {
+      if (r.StartDate && r.EndDate) {
+        dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).forEach(ds => alreadySaved.add(ds));
+      }
+    });
+    johnSelecting = { quarter: qk, selected: alreadySaved };
+  }
+  setSaving('john-sel-bar', 'john-confirm-btn', false);
+  updateJohnBar();
+  document.getElementById('john-err').style.display = 'none';
+  document.getElementById('john-sel-bar').classList.add('active');
+  renderCalendar();
+}
+
+function updateJohnBar() {
+  if (!johnSelecting) return;
+  const cnt = johnSelecting.selected.size;
+  const rem = 60 - cnt;
+  document.getElementById('john-sel-count').textContent = cnt;
+  const remEl = document.getElementById('john-sel-remaining');
+  if (rem > 0) { remEl.textContent = rem + ' remaining'; remEl.style.color = ''; }
+  else if (rem === 0) { remEl.textContent = '— at limit'; remEl.style.color = 'var(--green)'; }
+  else { remEl.textContent = Math.abs(rem) + ' over limit'; remEl.style.color = 'var(--red)'; }
+  document.getElementById('john-confirm-btn').disabled = cnt < 1;
+}
+
+function toggleJohnDay(ds) {
+  if (!johnSelecting) return;
+  if (johnSelecting.selected.has(ds)) {
+    johnSelecting.selected.delete(ds);
+  } else {
+    johnSelecting.selected.add(ds);
+  }
+  // Prevent selecting more than 60
+  if (johnSelecting.selected.size > 60) { johnSelecting.selected.delete(ds); }
+  updateJohnBar();
+  document.getElementById('john-err').style.display = 'none';
+  renderCalendar();
+}
+
+async function johnConfirm() {
+  if (!johnSelecting) return;
+  const sel = johnSelecting.selected;
+  if (sel.size < 1) {
+    const el = document.getElementById('john-err');
+    el.textContent = 'Please select at least 1 day.';
+    el.style.display = 'block';
+    return;
+  }
+  setSaving('john-sel-bar', 'john-confirm-btn', true);
+  const qk = johnSelecting.quarter;
+  const days = [...sel].sort();
+  const newCells = days.map(ds => ({
+    Owner: 'John', Type: 'fixed', StartDate: ds, EndDate: ds,
+    Status: 'confirmed', Quarter: qk, Note: ''
+  }));
+  try {
+    const existing = reservations.filter(r => r.Owner === 'John' && r.Quarter === qk);
+    await deleteRows('Reservations', existing.map(r => r._id));
+    const newIds = await addRows('Reservations', newCells);
+    await ensureQState(qk);
+    reservations = reservations.filter(r => !(r.Owner === 'John' && r.Quarter === qk));
+    (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
+  } catch(e) { setSaving('john-sel-bar', 'john-confirm-btn', false); showErr('john-err', 'Error saving: ' + e.message); return; }
+
+  setSaving('john-sel-bar', 'john-confirm-btn', false);
+  johnSelecting = null;
+  document.getElementById('john-sel-bar').classList.remove('active');
+  renderAll();
+}
+
+function johnCancelSelection() {
+  johnSelecting = null;
+  document.getElementById('john-sel-bar').classList.remove('active');
+  renderCalendar();
+  renderQFlow();
+}
+
+// ════════════════════════════════════════════════════════
+// PHASE TRANSITIONS
+// ════════════════════════════════════════════════════════
+async function activateQuarter(qk) {
+  try {
+    await ensureQState(qk); // creates the row with Phase='A'
+  } catch(e) { alert('Error activating quarter: ' + e.message); return; }
+  renderAll();
+}
+
+async function advancePhase(qk, newPhase) {
+  try {
+    const qs = await ensureQState(qk);
+    await updateRow('QuarterState', qs._id, { Phase: newPhase });
+    quarterStates[qk].phase = newPhase;
+  } catch(e) { alert('Error changing phase: ' + e.message); return; }
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════════
+// GENERIC USER SELECTION (non-John or John in B/C)
+// ════════════════════════════════════════════════════════
+function openUserSelection(qk) {
+  if (!userSelecting || userSelecting.quarter !== qk) {
+    const fixed  = [];
+    const floats = [];
+    reservations.filter(r => r.Owner === currentUser && r.Quarter === qk).forEach(r => {
+      if (!r.StartDate) return;
+      const ds = dStr(fromStr(r.StartDate));
+      if (r.Type === 'floating') floats.push(ds); else fixed.push(ds);
+    });
+    fixed.sort(); floats.sort();
+    const ordered = [...fixed, ...floats];
+    const quota = (isContributor() || isOwner()) ? getUserQuota(currentUser) : null;
+    userSelecting = { quarter: qk, selected: new Set(ordered), ordered, quota };
+  }
+  document.getElementById('user-sel-name').textContent = currentUser;
+  document.getElementById('user-sel-bar').classList.add('active');
+  // Reset button state in case it was left in Saving... state
+  setSaving('user-sel-bar', 'user-confirm-btn', false);
+  updateUserBar();
+  renderCalendar();
+}
+
+function setSaving(barId, btnId, saving) {
+  const bar = document.getElementById(barId);
+  const btn = document.getElementById(btnId);
+  if (!bar || !btn) return;
+  if (saving) {
+    bar.dataset.prevBtnText = btn.textContent;
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+    bar.style.opacity = '0.7';
+  } else {
+    btn.textContent = bar.dataset.prevBtnText || 'Save';
+    btn.disabled = false;
+    bar.style.opacity = '';
+  }
+}
+
+function updateUserBar() {
+  if (!userSelecting) return;
+  const cnt   = userSelecting.selected.size;
+  const quota = userSelecting.quota;
+  document.getElementById('user-sel-count').textContent = cnt;
+  // Allow save if there are days selected OR if there were previously saved days to clear
+  const hasSaved = reservations.some(r => r.Owner === currentUser && r.Quarter === (userSelecting && userSelecting.quarter));
+  document.getElementById('user-confirm-btn').disabled = (cnt < 1 && !hasSaved);
+  const hint = document.getElementById('user-sel-hint');
+  if (hint) {
+    const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
+    const detectedRole = u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
+    const displayQuota = (detectedRole === 'contributor' || detectedRole === 'owner') ? getUserQuota(currentUser) : null;
+    if (userSelecting && userSelecting.quota != null) {
+      const nFixed = Math.min(cnt, displayQuota);
+      const nFloat = Math.max(0, cnt - displayQuota);
+      hint.textContent = nFloat > 0
+        ? `${nFixed} fixed · ${nFloat} as float (amber outline)`
+        : `${nFixed} fixed · ${displayQuota - nFixed} slots remaining`;
+      hint.style.color = nFloat > 0 ? 'var(--amber)' : 'var(--text2)';
+      } else {
+      hint.textContent = 'Click open days to toggle';
+      hint.style.color = 'var(--text2)';
+      hint.style.fontSize = '';
+    }
+  }
+}
+
+function userCancelSelection() {
+  userSelecting = null;
+  document.getElementById('user-sel-bar').classList.remove('active');
+  renderCalendar();
+  renderQFlow();
+}
+
+function toggleUserDay(ds) {
+  if (!userSelecting) return;
+  if (userSelecting.selected.has(ds)) {
+    userSelecting.selected.delete(ds);
+    if (userSelecting.ordered) userSelecting.ordered = userSelecting.ordered.filter(d => d !== ds);
+  } else {
+    userSelecting.selected.add(ds);
+    if (userSelecting.ordered) userSelecting.ordered.push(ds);
+  }
+  updateUserBar();
+  renderCalendar();
+}
+
+async function userConfirm() {
+  if (!userSelecting) return;
+  const hasSaved = reservations.some(r => r.Owner === currentUser && r.Quarter === userSelecting.quarter);
+  if (userSelecting.selected.size < 1 && !hasSaved) return;
+  setSaving('user-sel-bar', 'user-confirm-btn', true);
+  const qk = userSelecting.quarter;
+  const newDays = [...userSelecting.selected].sort();
+
+  const existing = reservations.filter(r => r.Owner === currentUser && r.Quarter === qk);
+  // Always derive role fresh from users array at save time
+  const saveRole = (() => {
+    const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
+    return u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
+  })();
+  const saveQuota = (saveRole === 'contributor' || saveRole === 'owner') ? getUserQuota(currentUser) : null;
+  const ordered = userSelecting.ordered || [...newDays]; // click order determines fixed vs float
+
+  const newCells = newDays.map(ds => {
+    let isFloating;
+    if (saveRole === 'owner') {
+      isFloating = false;
+    } else if (saveRole === 'contributor') {
+      const pos = ordered.indexOf(ds);
+      isFloating = saveQuota !== null && pos >= saveQuota;
+    } else {
+      isFloating = true;
+    }
+    return {
+      Owner: currentUser,
+      Type:   isFloating ? 'floating' : 'fixed',
+      StartDate: ds, EndDate: ds,
+      Status: isFloating ? 'pending' : 'confirmed',
+      Quarter: qk, Note: ''
+    };
+  });
+  try {
+    await deleteRows('Reservations', existing.map(r => r._id));
+    const newIds = await addRows('Reservations', newCells);
+    await ensureQState(qk);
+    reservations = reservations.filter(r => !(r.Owner === currentUser && r.Quarter === qk));
+    (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
+    userSelecting = null;
+    document.getElementById('user-sel-bar').classList.remove('active');
+  } catch(e) {
+    alert('Error saving: ' + e.message);
+  } finally {
+    setSaving('user-sel-bar', 'user-confirm-btn', false);
+  }
+  renderAll();
+}
+
+async function releaseDay(ds) {
+  // With one-row-per-day storage, releasing is just deleting the matching row
+  const row = reservations.find(r =>
+    r.Owner === currentUser && dStr(fromStr(r.StartDate)) === ds
+  );
+  if (!row) { alert('No reservation found for ' + fmtDate(ds)); return; }
+  if (!confirm('Release ' + fmtDate(ds) + '?')) return;
+  try {
+    await deleteRows('Reservations', [row._id]);
+    reservations = reservations.filter(r => r._id !== row._id);
+  } catch(e) { alert('Error releasing day: ' + e.message); return; }
+  renderAll();
+}
+
+// daysToRanges removed — one row per day, no ranges needed
+
+// ════════════════════════════════════════════════════════
+// RICH / GREG — BLOCK PICKER
+// ════════════════════════════════════════════════════════
+function openBlockPicker(qk, blockNum) {
+  const user = currentUser;
+  const [y, qn] = [parseInt(qk.split('-Q')[0]), parseInt(qk.split('-Q')[1])];
+  const months = quarterMonths(qn);
+  const qs = quarterStart(y, qn);
+  const qe = quarterEnd(y, qn);
+
+  // Check if block 1 already done
+  const existingBlocks = reservations.filter(r =>
+    r.Owner === user && r.Type === 'fixed' && r.Quarter === qk
+  );
+  if (blockNum === 2 && existingBlocks.length < 1) {
+    alert('Please confirm block 1 first.'); return;
+  }
+  if (existingBlocks.length >= blockNum) {
+    alert(`Block ${blockNum} is already confirmed.`); return;
+  }
+
+  blockPicking = { user, quarter: qk, blockNum, year: y, qStart: qs, qEnd: qe };
+
+  document.getElementById('block-modal-title').textContent = `${user} — block ${blockNum} of 2`;
+  document.getElementById('block-modal-sub').textContent =
+    `Choose the Saturday of your 5-day block (Thu–Mon). It must fall within ${qk}.`;
+  document.getElementById('block-err').style.display = 'none';
+
+  // Build Saturday options within quarter
+  let html = '<div class="field"><label>Start Saturday</label><select id="block-sat-sel">';
+  let d = new Date(qs);
+  while(d.getDay()!==6) d=addDays(d,1);
+  while(d <= addDays(qe,-1)) {
+    const thu = addDays(d,-2), mon = addDays(d,2);
+    if (thu >= qs && mon <= qe) {
+      const label = `${fmtDate(dStr(thu))} → ${fmtDate(dStr(mon))} (${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][thu.getDay()]}–${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][mon.getDay()]})`;
+      html += `<option value="${dStr(thu)}">${label}</option>`;
+    }
+    d = addDays(d,7);
+  }
+  html += '</select></div>';
+  document.getElementById('block-modal-body').innerHTML = html;
+  openModal('block-modal');
+}
+
+async function confirmBlock() {
+  if (!blockPicking) return;
+  const { user, quarter, blockNum, qStart, qEnd } = blockPicking;
+  const startDs = document.getElementById('block-sat-sel').value;
+  const startD  = fromStr(startDs);
+  const endD    = addDays(startD, 4);
+  const endDs   = dStr(endD);
+
+  if (startD < qStart || endD > qEnd) {
+    showErr('block-err','Block falls outside the quarter.'); return;
+  }
+
+  const dayMap = buildDayMap();
+  const conflict = dateRange(startD, endD).some(ds => {
+    const d = dayMap[ds];
+    return d && d.type !== 'unallocated' && d.owner !== user;
+  });
+  if (conflict) { showErr('block-err','These dates conflict with another reservation.'); return; }
+
+  const blockDays = dateRange(startD, endD);
+  const newCells = blockDays.map(ds => ({
+    Owner: user, Type: 'fixed', StartDate: ds, EndDate: ds,
+    Status: 'confirmed', Quarter: quarter, Note: `Block ${blockNum}`
+  }));
+  try {
+    const newIds = await addRows('Reservations', newCells);
+    await ensureQState(quarter);
+    (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
+  } catch(e) { showErr('block-err','Error saving: '+e.message); return; }
+
+  blockPicking = null;
+  closeModal('block-modal');
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════════
+// FLOATING REQUEST
+// ════════════════════════════════════════════════════════
+async function submitFloatRequest() {
+  const name  = document.getElementById('req-name').value.trim();
+  const email = document.getElementById('req-email').value.trim();
+  const s     = document.getElementById('req-start').value;
+  const e     = document.getElementById('req-end').value;
+  const note  = document.getElementById('req-note').value.trim();
+
+  if (!name||!s||!e) { showErr('req-err','Name, check-in, and check-out are required.'); return; }
+  const sd=fromStr(s), ed=fromStr(e);
+  if (ed<sd) { showErr('req-err','Check-out must be after check-in.'); return; }
+  if (sd<START_DATE) { showErr('req-err','House opens August 1, 2026.'); return; }
+
+  // Check phase
+  const qk = getQuarterOf(s);
+  const phase = getPhase(qk);
+  if (phase !== 'C') { showErr('req-err','Floating days are not yet open for this quarter.'); return; }
+
+  const dayMap = buildDayMap();
+  const conflict = dateRange(sd, ed).some(ds => {
+    const d=dayMap[ds]; return d && !['floating_open','unallocated'].includes(d.type) && d.type !== undefined;
+  });
+  if (conflict) { showErr('req-err','These dates conflict with existing reservations.'); return; }
+
+  try {
+    const newIds = await addRows('FloatRequests', [{ Name:name, Email:email, StartDate:s, EndDate:e, Status:'pending', Note:note }]);
+    if (newIds[0]) floatRequests.push({ _id: newIds[0], Name:name, Email:email, StartDate:s, EndDate:e, Status:'pending', Note:note });
+  } catch(ex) { showErr('req-err','Error submitting: '+ex.message); return; }
+  closeModal('req-modal');
+  renderAll();
+}
+
+async function setPassword(userId, userName) {
+  const input = document.getElementById('pw-' + userId);
+  const newPw = (input.value || '').trim();
+  if (!newPw) { alert('Please enter a new password.'); return; }
+  const u = users.find(u => u._id === userId);
+  if (!u) { alert('User not found.'); return; }
+  try {
+    await updateRow('Users', userId, { Password: newPw });
+    u.Password = newPw;
+    input.value = '';
+    const st = document.getElementById('pw-status-' + userId);
+    if (st) { st.style.display = ''; setTimeout(() => st.style.display = 'none', 2000); }
+  } catch(e) { alert('Error setting password: ' + e.message); }
+}
+
+async function resolveFloat(rowId, status) {
+  try {
+    await updateRow('Reservations', rowId, { Status: status });
+    const r = reservations.find(r => r._id === rowId);
+    if (r) r.Status = status;
+  } catch(e) { alert('Error: ' + e.message); return; }
+  renderAll();
+}
+
+async function resolveRequest(rowId, status) {
+  try {
+    await updateRow('FloatRequests', rowId, { Status: status });
+    const fr = floatRequests.find(r => r._id === rowId);
+    if (fr) fr.Status = status;
+  } catch(e) { alert('Error: '+e.message); return; }
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════════
+// NAVIGATION & UTILITIES
+// ════════════════════════════════════════════════════════
+function syncQuarterToMonth() {
+  const newQk = quarterKey(curYear, Math.floor(curMonth / 3) + 1);
+  if (newQk === selectedQuarter) return;
+  selectedQuarter = newQk;
+  const sel = document.getElementById('quarter-select');
+  if (sel) {
+    if (!Array.from(sel.options).some(o => o.value === newQk)) {
+      const [y, q] = newQk.split('-Q').map(Number);
+      const opt = document.createElement('option');
+      opt.value = newQk;
+      opt.textContent = quarterOptionLabel(y, q);
+      const newOpt = Array.from(sel.options).find(o => o.value === '__new__');
+      newOpt ? sel.insertBefore(opt, newOpt) : sel.appendChild(opt);
+    }
+    sel.value = newQk;
+  }
+  if (johnSelecting && johnSelecting.quarter !== newQk) {
+    johnSelecting = null;
+    document.getElementById('john-sel-bar').classList.remove('active');
+  }
+  if (userSelecting && userSelecting.quarter !== newQk) {
+    userSelecting = null;
+    document.getElementById('user-sel-bar').classList.remove('active');
+  }
+}
+
+function prevMonth() {
+  if (curMonth > 0) curMonth--; else { curMonth = 11; curYear--; }
+  syncQuarterToMonth();
+  renderAll();
+}
+function nextMonth() {
+  if (curMonth < 11) curMonth++; else { curMonth = 0; curYear++; }
+  syncQuarterToMonth();
+  renderAll();
+}
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-cal').classList.toggle('active', tab==='calendar');
+}
+function openModal(id) { document.getElementById(id).style.display='flex'; }
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', function(e){ if(e.target===this) closeModal(this.id); });
+});
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+loadConfig();
+(async () => {
+  if (cfg.token && cfg.docId) {
+    await showLogin();
+  } else {
+    document.getElementById('setup-screen').style.display = '';
+  }
+})();
+</script>
+</body>
+</html>
