@@ -356,9 +356,6 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
   <div class="err" id="login-err" style="display:none;margin-bottom:1rem;text-align:center"></div>
   <br>
   <button class="btn" style="width:100%;font-size:12px;color:var(--text3)" onclick="showSetup()">Change Coda connection</button>
-  <br>
-  <button class="btn" style="width:100%;font-size:12px;color:var(--amber)" onclick="runDiagnostic()">&#128269; Run diagnostics</button>
-  <pre id="diag-out" style="display:none;margin-top:1rem;padding:1rem;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);font-size:11px;white-space:pre-wrap;word-break:break-all;text-align:left;max-height:320px;overflow-y:auto;color:var(--text)"></pre>
 </div>
 
 <!-- ── App shell ── -->
@@ -490,43 +487,6 @@ async function showLogin() {
   }
 }
 function logout() { currentUser = null; johnSelecting = null; userSelecting = null; showLogin(); }
-
-async function runDiagnostic() {
-  const out = document.getElementById('diag-out');
-  out.style.display = 'block';
-  out.textContent = 'Running...\n';
-  const log = msg => { out.textContent += msg + '\n'; };
-  try {
-    const doc = await codaReq('GET', `/docs/${cfg.docId}`);
-    log('OK doc: ' + doc.name);
-  } catch(e) { log('FAIL doc: ' + e.message); return; }
-  let tables;
-  try {
-    const data = await codaReq('GET', `/docs/${cfg.docId}/tables`);
-    tables = data.items;
-    log('OK tables: ' + tables.map(t => t.name).join(', '));
-  } catch(e) { log('FAIL tables: ' + e.message); return; }
-  for (const name of ['Reservations','QuarterState','Config','Users']) {
-    const t = tables.find(t => t.name === name);
-    if (!t) { log('MISSING table: ' + name); continue; }
-    try {
-      const cols = await codaReq('GET', `/docs/${cfg.docId}/tables/${t.id}/columns`);
-      const rows = await codaReq('GET', `/docs/${cfg.docId}/tables/${t.id}/rows?limit=1`);
-      let sample = '(empty)';
-      if (rows.items.length) {
-        const r = rows.items[0];
-        const mapped = {};
-        for (const [cid, v] of Object.entries(r.values)) {
-          const col = cols.items.find(c => c.id === cid);
-          mapped[col ? col.name : cid] = v;
-        }
-        sample = JSON.stringify(mapped);
-      }
-      log('OK ' + name + ' cols:[' + cols.items.map(c=>c.name).join(',') + '] row:' + sample);
-    } catch(e) { log('FAIL ' + name + ': ' + e.message); }
-  }
-  log('Done.');
-}
 
 // ════════════════════════════════════════════════════════
 // CODA API
@@ -675,10 +635,10 @@ function daysToRanges(records) {
   }
   return out;
 }
-// The owner's display name (first Users row whose role is owner); falls back to 'John' for legacy data.
+// The owner's display name (first Users row whose role is owner); generic fallback if none is set.
 function ownerName() {
   const o = users.find(u => u.Name && (u.Role || '').toLowerCase().trim() === 'owner');
-  return o ? o.Name.trim() : 'John';
+  return o ? o.Name.trim() : 'the owner';
 }
 
 // ════════════════════════════════════════════════════════
@@ -797,16 +757,24 @@ function onQuarterChange() {
 async function loadAll() {
   try {
     await warmTableCache(); // one /tables call, then all getRows skip it
-    const [resRows, qsRows, userRows, cfgRows] = await Promise.all([
+    const [resRows, qsRows, userRows, cfgRows, resCols] = await Promise.all([
       getRows('Reservations'),
       getRows('QuarterState'),
       getRows('Users').catch(() => []),
       getRows('Config').catch(() => []),
+      // Detect the optional "Guests" column in parallel — no extra serial round-trip at login.
+      codaReq('GET', `/docs/${cfg.docId}/tables/${tableIds['Reservations']}/columns`).catch(() => null),
     ]);
-    // Keep only reservations from the start of the current calendar year onward, so memory and
-    // rendering stay bounded as history grows. (Coda's API can't range-filter server-side, so this
-    // trims what we process rather than what we fetch — the row count is small thanks to range rows.)
-    const HISTORY_CUTOFF = dStr(new Date(TODAY.getFullYear(), 0, 1));
+    hasGuestsColumn = !!(resCols && (resCols.items || []).some(c => c.name === 'Guests'));
+    // Honor the configured opening date if the Config table provides one — before computing the cutoff.
+    const startCfg = cfgRows.find(r => (r.Key || '').trim() === 'StartDate');
+    if (startCfg && startCfg.Value) {
+      const d = fromStr(String(startCfg.Value).trim());
+      if (d && !isNaN(d.getTime())) START_DATE = d;
+    }
+    // Keep reservations from the start of START_DATE's quarter onward — the earliest quarter the UI can
+    // ever show — so every selectable quarter is fully loaded and a re-save can't silently duplicate rows.
+    const HISTORY_CUTOFF = dStr(new Date(START_DATE.getFullYear(), Math.floor(START_DATE.getMonth() / 3) * 3, 1));
     reservations = resRows.filter(r => !r.EndDate || r.EndDate.slice(0, 10) >= HISTORY_CUTOFF);
     // De-duplicate QuarterState by Quarter deterministically (first by row id wins) so a stray
     // duplicate row can't make the phase flap.
@@ -817,17 +785,6 @@ async function loadAll() {
       if (!quarterStates[k]) quarterStates[k] = { _id: r._id, phase: r.Phase || 'A' };
     });
     users = userRows.filter(r => r.Name);
-    // Detect the optional "Guests" column so the invite feature self-activates only when present.
-    try {
-      const cols = await codaReq('GET', `/docs/${cfg.docId}/tables/${tableIds['Reservations']}/columns`);
-      hasGuestsColumn = (cols.items || []).some(c => c.name === 'Guests');
-    } catch(e) { hasGuestsColumn = false; }
-    // Honor the configured opening date if the Config table provides one.
-    const startCfg = cfgRows.find(r => (r.Key || '').trim() === 'StartDate');
-    if (startCfg && startCfg.Value) {
-      const d = fromStr(String(startCfg.Value).trim());
-      if (d && !isNaN(d.getTime())) START_DATE = d;
-    }
   } catch(e) {
     document.getElementById('cal-grid').innerHTML =
       `<div class="loading-bar" style="grid-column:1/-1;color:var(--red)">
@@ -869,12 +826,8 @@ function buildDayMap() {
         type  = r.Status === 'approved' ? 'float_approved' : 'float_pending';
         label = r.Status === 'pending' ? r.Owner + ' (pending)' : r.Owner;
       } else {
-        // fixed — pick pill colour by owner; unknown owners get a generic reserved colour
-        const ownerKey = (r.Owner || '').toLowerCase();
-        type  = ownerKey === 'john' ? 'john_fixed'
-               : ownerKey === 'rich' ? 'rich_fixed'
-               : ownerKey === 'greg' ? 'greg_fixed'
-               : 'rich_fixed'; // fallback — shows as reserved, not Open
+        // fixed — pill colour comes from the owner/contributor's palette slot (role-based, not name-based)
+        type = (personSlot(r.Owner) || 'rich') + '_fixed';
         label = r.Owner;
       }
       map[ds] = { type, label, owner: r.Owner, _resId: r._id, status: r.Status, guests: (r.Guests || '').trim() };
@@ -916,8 +869,23 @@ function canSelect(qk) {
 // ════════════════════════════════════════════════════════
 // LOGIN
 // ════════════════════════════════════════════════════════
+// Assign each person a stable color-palette slot from their ROLE, never their name:
+// the owner -> 'john' (purple); contributors -> 'rich'/'greg' by stable alphabetical order;
+// anyone else -> null. PILL_STYLES / --john/--rich/--greg are palette identifiers, not people.
+const PERSON_PALETTES = ['rich', 'greg'];
+function personSlot(name) {
+  const key = (name || '').trim().toLowerCase();
+  if (!key) return null;
+  const owner = users.find(u => u.Name && (u.Role || '').toLowerCase().trim() === 'owner');
+  if (owner && owner.Name.trim().toLowerCase() === key) return 'john';
+  const contribs = users
+    .filter(u => u.Name && (u.Role || '').toLowerCase().trim() === 'contributor')
+    .map(u => u.Name.trim().toLowerCase()).sort();
+  const idx = contribs.indexOf(key);
+  return idx >= 0 ? PERSON_PALETTES[idx % PERSON_PALETTES.length] : null;
+}
 function userClass(who) {
-  return ['John','Rich','Greg'].includes(who) ? who.toLowerCase() : 'guest';
+  return personSlot(who) || 'guest';
 }
 // Role is read from the Users table in Coda. Recognised roles:
 //   owner        — full control (John)
@@ -959,7 +927,16 @@ function loginByName() {
   const pass = (document.getElementById('login-pass').value || '').trim();
   if (!name) { showErr('login-err', 'Please enter your name.'); return; }
   const matches = usersNamed(name);
-  if (!matches.length) { showErr('login-err', 'Name not recognized. Ask Rich to add you in Coda.'); return; }
+  if (!matches.length) {
+    // Point them at an actual owner (by name) rather than a hardcoded person. showErr uses
+    // textContent, which already escapes, so the names are not HTML-escaped here.
+    const owners = users.filter(u => u.Name && (u.Role || '').toLowerCase().trim() === 'owner').map(u => u.Name.trim());
+    const who = owners.length === 1 ? `the owner (${owners[0]})`
+              : owners.length > 1 ? `an owner (${owners.slice(0, -1).join(', ')} or ${owners[owners.length - 1]})`
+              : 'an owner';
+    showErr('login-err', `Name not recognized. Ask ${who} to add you.`);
+    return;
+  }
   if (matches.length > 1) {
     showErr('login-err', `More than one account is named “${name}”. Names must be unique — ask the owner to remove the duplicate in Coda.`);
     return;
@@ -1033,6 +1010,14 @@ function renderQFlow() {
   const actionRow = document.getElementById('cal-action-row');
   if (!selectedQuarter) return;
 
+  // Guests get only the calendar + quarter selector — no workflow banner, phase steps, or messages.
+  if (isGuest()) {
+    area.innerHTML = '';
+    actionRow.innerHTML = '';
+    actionRow.style.display = 'none';
+    return;
+  }
+
   const parts = selectedQuarter.split('-Q');
   const y = parseInt(parts[0]), q = parseInt(parts[1]);
   const qk = selectedQuarter;
@@ -1070,18 +1055,6 @@ function renderQFlow() {
 
   let msgHTML = '';
   let actionHTML = '';
-
-  // Guests are view-only — show the schedule and a banner, never any booking action.
-  if (isGuest()) {
-    msgHTML = `<div class="info-box">👀 <strong>View-only access.</strong> You can browse the calendar, but booking days is reserved for family members.</div>`;
-    area.innerHTML = `<div class="qflow">
-      <div class="phase-steps" style="margin-bottom:.75rem">${stepsHTML}</div>
-      ${msgHTML}
-    </div>`;
-    actionRow.innerHTML = '';
-    actionRow.style.display = 'none';
-    return;
-  }
 
   const isJohn = isOwner();
   const isSelecting = johnSelecting && johnSelecting.quarter === qk;
@@ -1170,19 +1143,19 @@ function renderCalendar() {
     const preOpen = d < START_DATE;
     const qk = selectedQuarter;
 
-    // When John is selecting, suppress his own days from dayMap so the
+    // While the owner is selecting, suppress their own days from dayMap so the
     // selection set is the single source of truth for display & clicking.
     // When a user is selecting, suppress their own days similarly.
     let rawDisp = !other ? dayMap[ds] : null;
-    const inJohnSel = johnSel && johnSel.quarter === getQuarterOf(ds) && rawDisp && rawDisp.owner === 'John';
+    const inJohnSel = johnSel && johnSel.quarter === getQuarterOf(ds) && rawDisp && rawDisp.owner === currentUser;
     const inUserSel = userSelecting && userSelecting.quarter === getQuarterOf(ds) && rawDisp && rawDisp.owner === currentUser;
     const disp = (inJohnSel || inUserSel) ? null : rawDisp;
 
     const isJohnSelected   = johnSel && johnSel.selected.has(ds);
-    // John selectable = in his quarter AND the day is either his or unoccupied
+    // Owner-selectable = in their quarter AND the day is either their own or unoccupied
     const isJohnSelectable = johnSel && !other && !preOpen &&
       getQuarterOf(ds) === johnSel.quarter &&
-      (!rawDisp || rawDisp.owner === 'John');
+      (!rawDisp || rawDisp.owner === currentUser);
 
     // User selectable = in their quarter AND day is unoccupied (not someone else's)
     const isUserSelectable = userSelecting && !other && !preOpen &&
@@ -1218,7 +1191,7 @@ function renderCalendar() {
 
     let pill = '';
     if (isJohnSelected && !other) {
-      pill = `<span class="pill" style="background:var(--john-bg);color:var(--john-text);border-color:var(--john-bd)">John ✓</span>`;
+      pill = `<span class="pill" style="background:var(--john-bg);color:var(--john-text);border-color:var(--john-bd)">${esc(currentUser)} ✓</span>`;
     } else if (isUserSelected && !other) {
       if (isOverQuota) {
         pill = `<span class="pill" style="background:var(--amber);color:#fff;border-color:var(--amber)">${esc(currentUser)} ~ float</span>`;
@@ -1255,6 +1228,8 @@ function renderCalendar() {
 }
 
 function renderStats() {
+  // Guests see only the calendar + quarter selector — no per-person stats.
+  if (isGuest()) { document.getElementById('stats-row').innerHTML = ''; return; }
   const qk = selectedQuarter;
   const y  = curYear;
 
@@ -1271,15 +1246,10 @@ function renderStats() {
     }).reduce((n, r) => n + (r.StartDate && r.EndDate ? dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).length : 1), 0);
   }
 
-  // All owners+contributors from users table; fall back to hardcoded trio
-  const ownerNames = users.filter(u => u.Role && ['owner','contributor'].includes(u.Role.toLowerCase().trim()))
-    .map(u => u.Name);
-  const people = ownerNames.length
-    ? ownerNames.map(n => {
-        const col = n.toLowerCase() === 'john' ? 'var(--john)' : n.toLowerCase() === 'rich' ? 'var(--rich)' : n.toLowerCase() === 'greg' ? 'var(--greg)' : 'var(--text)';
-        return { name: n, color: col };
-      })
-    : [{ name:'John', color:'var(--john)' }, { name:'Rich', color:'var(--rich)' }, { name:'Greg', color:'var(--greg)' }];
+  // Owners + contributors from the Users table; color comes from each person's palette slot (role-based).
+  const people = users
+    .filter(u => u.Name && ['owner','contributor'].includes((u.Role || '').toLowerCase().trim()))
+    .map(u => ({ name: u.Name, color: personSlot(u.Name) ? `var(--${personSlot(u.Name)})` : 'var(--text)' }));
 
   const qLabel = qk ? qk.replace('-', ' ') : 'Quarter';
   const divider = '<div style="grid-column:1/-1;border-top:1px solid var(--border);margin:.5rem 0"></div>';
@@ -1352,12 +1322,18 @@ function renderStats() {
 }
 
 function renderLegend() {
+  // Per-person entries are derived from the Users table (owner + contributors) with their palette
+  // color — no hardcoded names.
+  const people = users
+    .filter(u => u.Name && ['owner','contributor'].includes((u.Role || '').toLowerCase().trim()))
+    .map(u => {
+      const slot = personSlot(u.Name) || 'rich';
+      return { bg:`var(--${slot}-bg)`, bd:`var(--${slot}-bd)`, label:`${esc(u.Name)}'s days` };
+    });
   const items = [
-    { bg:'var(--john-bg)', bd:'var(--john-bd)', label:"John's days" },
-    { bg:'var(--rich-bg)', bd:'var(--rich-bd)', label:"Rich's days" },
-    { bg:'var(--greg-bg)', bd:'var(--greg-bd)', label:"Greg's days" },
+    ...people,
     { bg:'var(--float-bg)',bd:'var(--float-bd)',label:'Floating' },
-{ bg:'var(--appr-bg)', bd:'var(--appr-bd)', label:'Float approved' },
+    { bg:'var(--appr-bg)', bd:'var(--appr-bd)', label:'Float approved' },
     { bg:'var(--pend-bg)', bd:'var(--pend-bd)', label:'Pending' },
     { bg:'var(--surface2)',bd:'var(--border2)', label:'Open' },
   ];
@@ -1545,6 +1521,17 @@ function toggleJohnDay(ds) {
   renderCalendar();
 }
 
+// Drop any reservation cell-set missing required fields so the app can never create a blank row.
+function validResCells(cells) {
+  return cells.filter(c => c && c.Owner && c.StartDate && c.EndDate);
+}
+// Delete rows, retrying once on failure (the delete runs after a successful add in the save flow).
+async function deleteRowsRetry(table, ids) {
+  if (!ids.length) return;
+  try { await deleteRows(table, ids); }
+  catch(e) { await deleteRows(table, ids); } // one retry; a second failure propagates to the caller
+}
+
 async function johnConfirm() {
   if (!johnSelecting) return;
   if (johnSelecting.selected.size < 1) { showErr('john-err', 'Please select at least 1 day.'); return; }
@@ -1552,16 +1539,15 @@ async function johnConfirm() {
   const who = currentUser, qk = johnSelecting.quarter;
   const gl = dayGuestsLookup(johnSelecting);
   const records = [...johnSelecting.selected].sort().map(ds => ({ ds, Type: 'fixed', Status: 'confirmed', Guests: gl[ds] || '' }));
-  const newCells = daysToRanges(records).map(r => ({
+  const newCells = validResCells(daysToRanges(records).map(r => ({
     Owner: who, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
     Status: r.Status, Quarter: qk, Note: '', ...(hasGuestsColumn ? { Guests: r.Guests } : {})
-  }));
+  })));
   try {
     const existing = reservations.filter(r => r.Owner === who && r.Quarter === qk);
-    // Add new rows BEFORE deleting old ones, so a mid-save failure can't lose the booking.
-    const newIds = await addRows('Reservations', newCells);
-    await ensureQState(qk);
-    await deleteRows('Reservations', existing.map(r => r._id));
+    await ensureQState(qk);                       // QuarterState work BEFORE the add (no post-add steps but delete)
+    const newIds = newCells.length ? await addRows('Reservations', newCells) : [];
+    await deleteRowsRetry('Reservations', existing.map(r => r._id));
     reservations = reservations.filter(r => !(r.Owner === who && r.Quarter === qk));
     (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
   } catch(e) { setSaving('john-sel-bar', 'john-confirm-btn', false); showErr('john-err', 'Error saving: ' + e.message); return; }
@@ -1711,15 +1697,14 @@ async function userConfirm() {
     return { ds, Type: floating ? 'floating' : 'fixed', Status: floating ? 'pending' : 'confirmed', Guests: gl[ds] || '' };
   });
   // Collapse into range rows (split where type/status/guests change or dates aren't consecutive).
-  const newCells = daysToRanges(records).map(r => ({
+  const newCells = validResCells(daysToRanges(records).map(r => ({
     Owner: currentUser, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
     Status: r.Status, Quarter: qk, Note: '', ...(hasGuestsColumn ? { Guests: r.Guests } : {})
-  }));
+  })));
   try {
-    // Add new rows BEFORE deleting old ones, so a mid-save failure can't lose the booking.
-    const newIds = await addRows('Reservations', newCells);
-    await ensureQState(qk);
-    await deleteRows('Reservations', existing.map(r => r._id));
+    await ensureQState(qk);                       // QuarterState work BEFORE the add
+    const newIds = newCells.length ? await addRows('Reservations', newCells) : [];
+    await deleteRowsRetry('Reservations', existing.map(r => r._id));
     reservations = reservations.filter(r => !(r.Owner === currentUser && r.Quarter === qk));
     (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
     userSelecting = null;
@@ -1744,13 +1729,13 @@ async function releaseDay(ds) {
     : `Release ${fmtDate(ds)}?`)) return;
   // Re-collapse the remaining days into sub-ranges, preserving type/status/guests.
   const remaining = span.filter(d => d !== ds);
-  const subCells = daysToRanges(remaining.map(d => ({ ds: d, Type: row.Type, Status: row.Status, Guests: (row.Guests || '').trim() })))
+  const subCells = validResCells(daysToRanges(remaining.map(d => ({ ds: d, Type: row.Type, Status: row.Status, Guests: (row.Guests || '').trim() })))
     .map(r => ({ Owner: currentUser, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
-      Status: r.Status, Quarter: row.Quarter, Note: row.Note || '', ...(hasGuestsColumn ? { Guests: r.Guests } : {}) }));
+      Status: r.Status, Quarter: row.Quarter, Note: row.Note || '', ...(hasGuestsColumn ? { Guests: r.Guests } : {}) })));
   try {
-    // Add the split remainder BEFORE deleting the original row (no-loss).
+    // Add the split remainder BEFORE deleting the original row (no-loss), retrying the delete once.
     const newIds = subCells.length ? await addRows('Reservations', subCells) : [];
-    await deleteRows('Reservations', [row._id]);
+    await deleteRowsRetry('Reservations', [row._id]);
     reservations = reservations.filter(r => r._id !== row._id);
     (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...subCells[i] }));
   } catch(e) { alert('Error releasing day: ' + e.message); return; }
@@ -1775,11 +1760,25 @@ async function setPassword(userId) {
 // ── Account administration (owner only) ──
 const ROLES = ['owner', 'contributor', 'other_family', 'guest'];
 function roleOptions(selected) {
-  return ROLES.map(r => `<option value="${r}"${r === selected ? ' selected' : ''}>${r}</option>`).join('');
+  // If the stored role isn't recognized, show a disabled placeholder (selected) so an unknown
+  // role can't silently masquerade as the first option ('owner').
+  const unknown = selected && !ROLES.includes(selected)
+    ? `<option value="" selected disabled>(unrecognized: ${esc(selected)})</option>` : '';
+  return unknown + ROLES.map(r => `<option value="${r}"${r === selected ? ' selected' : ''}>${r}</option>`).join('');
 }
 async function setUserRole(userId, role) {
   const u = users.find(u => u._id === userId);
   if (!u || !ROLES.includes(role)) return;
+  // Don't allow demoting away the last owner (mirror the deleteUser guard); warn on self-demotion.
+  if ((u.Role || '').toLowerCase().trim() === 'owner' && role !== 'owner') {
+    const owners = users.filter(x => (x.Role || '').toLowerCase().trim() === 'owner');
+    if (owners.length <= 1) {
+      alert("You can't demote the only owner — promote someone else to owner first.");
+      renderAll(); return;
+    }
+    const isSelf = u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase();
+    if (isSelf && !confirm('This removes your own owner access. Continue?')) { renderAll(); return; }
+  }
   try { await updateRow('Users', userId, { Role: role }); u.Role = role; }
   catch(e) { alert('Error changing role: ' + e.message); }
   renderAll(); // refreshes quotas, stats, and the day-input visibility for this account
@@ -1836,11 +1835,16 @@ async function deleteUser(userId) {
   renderAll();
 }
 
-// ── Self-service password change (any signed-in user) ──
+// ── Self-service password change (any signed-in non-guest user) ──
 function renderMyAccount() {
   const el = document.getElementById('my-account');
   if (!el) return;
-  if (!currentUser) { el.innerHTML = ''; return; }
+  // Guests don't get the password-change panel; clear it when signed out or for guests.
+  if (!currentUser || isGuest()) { el.innerHTML = ''; el.dataset.renderedFor = ''; return; }
+  // Don't rebuild on every renderAll — that would wipe half-typed fields. Only (re)render when
+  // the panel is empty or the signed-in user changed.
+  if (el.dataset.renderedFor === currentUser && el.querySelector('#mypw-current')) return;
+  el.dataset.renderedFor = currentUser;
   el.innerHTML = `
     <div class="admin-section">
       <h3>My account</h3>
