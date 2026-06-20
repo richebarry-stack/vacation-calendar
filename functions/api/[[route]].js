@@ -1,10 +1,9 @@
-// Cloudflare Pages Function — RBAC proxy for the vacation-home booking calendar.
-// Static assets (index.html) are served by Pages; all /api/* requests land here.
+// Cloudflare Pages Function — RBAC backend for the vacation-home booking calendar.
+// Uses D1 (SQLite) for storage. Static assets (index.html) are served by Pages.
 //
-// Required env/secrets (set via Cloudflare dashboard):
-//   CODA_TOKEN   — Coda API token
-//   CODA_DOC_ID  — Coda document ID
-//   JWT_SECRET   — random string for signing session JWTs
+// Required env/secrets:
+//   DB          — D1 database binding
+//   JWT_SECRET  — random string for signing session JWTs
 
 // ════════════════════════════════════════════
 // BASE64-URL
@@ -72,38 +71,6 @@ async function checkPw(password, stored) {
 }
 
 // ════════════════════════════════════════════
-// CODA helpers
-// ════════════════════════════════════════════
-const CODA = 'https://coda.io/apis/v1';
-
-async function codaFetch(env, method, path, body) {
-  return fetch(`${CODA}/docs/${env.CODA_DOC_ID}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${env.CODA_TOKEN}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-}
-
-let _tbl = null, _tblAt = 0;
-async function tblMap(env) {
-  if (_tbl && Date.now() - _tblAt < 300_000) return _tbl;
-  const r = await codaFetch(env, 'GET', '/tables');
-  if (!r.ok) throw new Error('Failed to list tables');
-  const d = await r.json();
-  _tbl = {};
-  for (const t of d.items) { _tbl[t.id] = t.name; _tbl[t.name] = t.id; }
-  _tblAt = Date.now();
-  return _tbl;
-}
-
-async function allUsers(env) {
-  const m = await tblMap(env);
-  const r = await codaFetch(env, 'GET', `/tables/${m.Users}/rows?useColumnNames=true&limit=500`);
-  if (!r.ok) throw new Error('Failed to load users');
-  return (await r.json()).items;
-}
-
-// ════════════════════════════════════════════
 // COOKIES / SESSION
 // ════════════════════════════════════════════
 function getCookie(req, name) {
@@ -138,13 +105,12 @@ async function handleLogin(req, env) {
   const { name, password } = body;
   if (!name) return json({ error: 'Name is required.' }, 400);
 
-  const rows = await allUsers(env);
-  const users = rows.map(r => ({ _id: r.id, ...r.values }));
   const key = name.trim().toLowerCase();
-  const matches = users.filter(u => u.Name && u.Name.trim().toLowerCase() === key);
+  const users = await env.DB.prepare('SELECT * FROM Users').all();
+  const matches = users.results.filter(u => u.Name && u.Name.trim().toLowerCase() === key);
 
   if (!matches.length) {
-    const owners = users
+    const owners = users.results
       .filter(u => (u.Role || '').toLowerCase().trim() === 'owner')
       .map(u => u.Name.trim());
     const who = owners.length === 1 ? `the owner (${owners[0]})`
@@ -181,7 +147,7 @@ function handleLogout(req) {
 }
 
 // ════════════════════════════════════════════
-// CHANGE PASSWORD  (any authenticated user)
+// CHANGE PASSWORD
 // ════════════════════════════════════════════
 async function handleChangePassword(req, env, session) {
   let body;
@@ -189,145 +155,194 @@ async function handleChangePassword(req, env, session) {
   const { currentPassword, newPassword } = body;
   if (!newPassword) return json({ error: 'New password is required.' }, 400);
 
-  const rows = await allUsers(env);
-  const user = rows.find(r => r.values.Name && r.values.Name.trim().toLowerCase() === session.sub.toLowerCase());
+  const user = await env.DB.prepare('SELECT * FROM Users WHERE LOWER(TRIM(Name)) = ?')
+    .bind(session.sub.toLowerCase()).first();
   if (!user) return json({ error: 'Account not found.' }, 404);
 
-  const stored = (user.values.Password || '').trim();
+  const stored = (user.Password || '').trim();
   if (stored && !(await checkPw(currentPassword || '', stored))) {
     return json({ error: 'Current password is incorrect.' }, 403);
   }
 
   const hashed = await hashPw(newPassword);
-  const m = await tblMap(env);
-  const up = await codaFetch(env, 'PUT', `/tables/${m.Users}/rows/${user.id}`, {
-    row: { cells: [{ column: 'Password', value: hashed }] },
-  });
-  if (!up.ok) return json({ error: 'Failed to update password.' }, 500);
-
+  await env.DB.prepare('UPDATE Users SET Password = ? WHERE id = ?').bind(hashed, user.id).run();
   return json({ ok: true });
 }
 
 // ════════════════════════════════════════════
-// RBAC — authorize write operations
+// TABLE ENDPOINTS  (replace Coda proxy with direct D1 queries)
 // ════════════════════════════════════════════
-async function denyWrite(env, session, table, method, body) {
-  const role = session.role;
-  if (role === 'guest') return 'Guests are view-only.';
-  if (role === 'owner') return null;
 
-  if (table === 'Config') return 'Only owners can modify configuration.';
-  if (table === 'Users') return 'Only owners can manage user accounts.';
+// GET /api/tables — return table names + IDs (frontend expects this shape)
+async function listTables(env) {
+  const names = ['Reservations', 'QuarterState', 'Users', 'Config'];
+  return json({ items: names.map(n => ({ id: n, name: n })) });
+}
 
-  if (table === 'Reservations') {
-    if (method === 'POST' && body && body.rows) {
-      for (const row of body.rows) {
-        const oc = (row.cells || []).find(c => c.column === 'Owner');
-        if (oc && oc.value !== session.sub) return 'You can only create reservations for yourself.';
+// GET /api/tables/:table/columns — return column names
+async function listColumns(env, table) {
+  const cols = {
+    Reservations: ['Owner', 'Type', 'StartDate', 'EndDate', 'Status', 'Quarter', 'Note', 'Guests'],
+    QuarterState: ['Quarter', 'Phase'],
+    Users: ['Name', 'Password', 'Role', 'DaysPerQuarter'],
+    Config: ['Key', 'Value'],
+  };
+  const list = cols[table];
+  if (!list) return json({ error: 'Unknown table.' }, 404);
+  return json({ items: list.map(name => ({ name })) });
+}
+
+// GET /api/tables/:table/rows — return all rows
+async function getRows(env, table, session, url) {
+  const valid = ['Reservations', 'QuarterState', 'Users', 'Config'];
+  if (!valid.includes(table)) return json({ error: 'Unknown table.' }, 404);
+
+  const rows = await env.DB.prepare(`SELECT * FROM ${table}`).all();
+  const items = rows.results.map(row => {
+    const values = { ...row };
+    const id = String(row.id);
+    delete values.id;
+    if (table === 'Users') delete values.Password;
+    return { id, values };
+  });
+
+  return json({ items });
+}
+
+// POST /api/tables/:table/rows — insert rows
+async function addRows(env, table, session, body) {
+  const valid = ['Reservations', 'QuarterState', 'Users', 'Config'];
+  if (!valid.includes(table)) return json({ error: 'Unknown table.' }, 404);
+
+  // RBAC
+  if (session.role === 'guest') return json({ error: 'Guests are view-only.' }, 403);
+  if (session.role !== 'owner') {
+    if (table === 'Config') return json({ error: 'Only owners can modify configuration.' }, 403);
+    if (table === 'Users') return json({ error: 'Only owners can manage user accounts.' }, 403);
+  }
+
+  if (!body || !body.rows) return json({ error: 'Missing rows.' }, 400);
+  const addedRowIds = [];
+
+  for (const row of body.rows) {
+    const cells = {};
+    for (const c of (row.cells || [])) cells[c.column] = c.value;
+
+    // RBAC: non-owners can only create their own reservations
+    if (table === 'Reservations' && session.role !== 'owner') {
+      if (cells.Owner && cells.Owner !== session.sub) {
+        return json({ error: 'You can only create reservations for yourself.' }, 403);
       }
     }
-    if (method === 'DELETE' && body && body.rowIds && body.rowIds.length) {
-      const m = await tblMap(env);
-      const r = await codaFetch(env, 'GET', `/tables/${m.Reservations}/rows?useColumnNames=true&limit=500`);
-      if (!r.ok) return 'Failed to verify ownership.';
-      const owners = {};
-      for (const row of (await r.json()).items) owners[row.id] = row.values.Owner;
-      for (const id of body.rowIds) {
-        if (owners[id] && owners[id] !== session.sub) return 'You can only delete your own reservations.';
+
+    // Hash passwords
+    if (table === 'Users' && cells.Password) {
+      cells.Password = await hashPw(cells.Password);
+    }
+
+    const colDefs = {
+      Reservations: ['Owner', 'Type', 'StartDate', 'EndDate', 'Status', 'Quarter', 'Note', 'Guests'],
+      QuarterState: ['Quarter', 'Phase'],
+      Users: ['Name', 'Password', 'Role', 'DaysPerQuarter'],
+      Config: ['Key', 'Value'],
+    };
+
+    const cols = colDefs[table].filter(c => cells[c] !== undefined);
+    const vals = cols.map(c => cells[c]);
+    const placeholders = cols.map(() => '?').join(', ');
+
+    const result = await env.DB.prepare(
+      `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`
+    ).bind(...vals).run();
+
+    addedRowIds.push(String(result.meta.last_row_id));
+  }
+
+  return json({ addedRowIds });
+}
+
+// PUT /api/tables/:table/rows/:rowId — update a row
+async function updateRow(env, table, rowId, session, body) {
+  const valid = ['Reservations', 'QuarterState', 'Users', 'Config'];
+  if (!valid.includes(table)) return json({ error: 'Unknown table.' }, 404);
+
+  // RBAC
+  if (session.role === 'guest') return json({ error: 'Guests are view-only.' }, 403);
+  if (session.role !== 'owner') {
+    if (table === 'Config') return json({ error: 'Only owners can modify configuration.' }, 403);
+    if (table === 'Users') return json({ error: 'Only owners can manage user accounts.' }, 403);
+    if (table === 'Reservations') {
+      const existing = await env.DB.prepare('SELECT Owner FROM Reservations WHERE id = ?').bind(rowId).first();
+      if (existing && existing.Owner !== session.sub) {
+        return json({ error: 'You can only modify your own reservations.' }, 403);
       }
     }
-    if (method === 'PUT' && body && body.row) {
-      const oc = (body.row.cells || []).find(c => c.column === 'Owner');
-      if (oc && oc.value !== session.sub) return 'You can only modify your own reservations.';
-    }
-    return null;
   }
 
-  if (table === 'QuarterState') return null;
+  if (!body || !body.row || !body.row.cells) return json({ error: 'Missing row data.' }, 400);
 
-  return 'Unknown table.';
+  const cells = {};
+  for (const c of body.row.cells) cells[c.column] = c.value;
+
+  // Hash passwords
+  if (table === 'Users' && cells.Password) {
+    cells.Password = await hashPw(cells.Password);
+  }
+
+  // Non-owners can't change Owner on reservations
+  if (table === 'Reservations' && session.role !== 'owner' && cells.Owner && cells.Owner !== session.sub) {
+    return json({ error: 'You can only modify your own reservations.' }, 403);
+  }
+
+  const cols = Object.keys(cells);
+  const sets = cols.map(c => `${c} = ?`).join(', ');
+  const vals = cols.map(c => cells[c]);
+
+  await env.DB.prepare(`UPDATE ${table} SET ${sets} WHERE id = ?`).bind(...vals, rowId).run();
+  return json({ ok: true });
 }
 
-// ════════════════════════════════════════════
-// PROXY — forward requests to Coda API
-// ════════════════════════════════════════════
-async function hashPasswordCells(body, method) {
-  if (method === 'POST' && body && body.rows) {
-    for (const row of body.rows) {
-      for (const c of (row.cells || [])) {
-        if (c.column === 'Password' && c.value) c.value = await hashPw(c.value);
+// DELETE /api/tables/:table/rows — delete rows
+async function deleteTableRows(env, table, session, body) {
+  const valid = ['Reservations', 'QuarterState', 'Users', 'Config'];
+  if (!valid.includes(table)) return json({ error: 'Unknown table.' }, 404);
+
+  // RBAC
+  if (session.role === 'guest') return json({ error: 'Guests are view-only.' }, 403);
+  if (session.role !== 'owner') {
+    if (table === 'Config') return json({ error: 'Only owners can modify configuration.' }, 403);
+    if (table === 'Users') return json({ error: 'Only owners can manage user accounts.' }, 403);
+    if (table === 'Reservations' && body && body.rowIds) {
+      const placeholders = body.rowIds.map(() => '?').join(', ');
+      const rows = await env.DB.prepare(
+        `SELECT id, Owner FROM Reservations WHERE id IN (${placeholders})`
+      ).bind(...body.rowIds).all();
+      for (const r of rows.results) {
+        if (r.Owner !== session.sub) return json({ error: 'You can only delete your own reservations.' }, 403);
       }
     }
   }
-  if (method === 'PUT' && body && body.row) {
-    for (const c of (body.row.cells || [])) {
-      if (c.column === 'Password' && c.value) c.value = await hashPw(c.value);
-    }
-  }
-}
 
-function stripPasswords(data) {
-  if (!data || !data.items) return;
-  for (const row of data.items) {
-    if (row.values && 'Password' in row.values) delete row.values.Password;
-  }
-}
+  if (!body || !body.rowIds || !body.rowIds.length) return json({ error: 'Missing rowIds.' }, 400);
 
-async function handleProxy(req, env, session, segments) {
-  const method = req.method;
-  const query = new URL(req.url).search || '';
-  const codaPath = '/' + segments.join('/');
-
-  if (['POST', 'PUT', 'DELETE'].includes(method)) {
-    let body = null;
-    try { body = await req.json(); } catch {}
-
-    let tableName = null;
-    if (segments[0] === 'tables' && segments[1]) {
-      const m = await tblMap(env);
-      tableName = m[segments[1]] || null;
-    }
-
-    if (tableName) {
-      const reason = await denyWrite(env, session, tableName, method, body);
-      if (reason) return json({ error: reason }, 403);
-      if (tableName === 'Users') await hashPasswordCells(body, method);
-    }
-
-    const res = await codaFetch(env, method, codaPath + query, body);
-    if (method === 'DELETE') return new Response(null, { status: res.status });
-    const data = await res.json().catch(() => ({}));
-    return json(data, res.status);
-  }
-
-  // GET — forward and optionally strip sensitive fields
-  const res = await codaFetch(env, 'GET', codaPath + query);
-  if (!res.ok) return new Response(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } });
-  const data = await res.json();
-
-  if (segments[0] === 'tables' && segments[1] && segments[2] === 'rows') {
-    const m = await tblMap(env);
-    if (m[segments[1]] === 'Users') stripPasswords(data);
-  }
-
-  return json(data);
+  const placeholders = body.rowIds.map(() => '?').join(', ');
+  await env.DB.prepare(`DELETE FROM ${table} WHERE id IN (${placeholders})`).bind(...body.rowIds).run();
+  return new Response(null, { status: 202 });
 }
 
 // ════════════════════════════════════════════
-// ENTRY POINT
+// ROUTER
 // ════════════════════════════════════════════
 export async function onRequest(context) {
   const { request: req, env, params } = context;
   const method = req.method;
   const route = params.route || [];
 
-  if (!env.JWT_SECRET || !env.CODA_TOKEN || !env.CODA_DOC_ID) {
-    return json({ error: 'Server not configured. Set JWT_SECRET, CODA_TOKEN, and CODA_DOC_ID as secrets.' }, 500);
+  if (!env.JWT_SECRET || !env.DB) {
+    return json({ error: 'Server not configured. Set JWT_SECRET and bind D1 as DB.' }, 500);
   }
 
-  if (method === 'OPTIONS') {
-    return new Response(null, { status: 204 });
-  }
+  if (method === 'OPTIONS') return new Response(null, { status: 204 });
 
   // Public
   if (route[0] === 'login' && method === 'POST') return handleLogin(req, env);
@@ -344,5 +359,29 @@ export async function onRequest(context) {
     return handleChangePassword(req, env, session);
   }
 
-  return handleProxy(req, env, session, route);
+  // Table operations: /api/tables, /api/tables/:table/rows, etc.
+  if (route[0] === 'tables') {
+    if (!route[1] && method === 'GET') return listTables(env);
+
+    const table = route[1];
+    if (route[2] === 'columns' && method === 'GET') return listColumns(env, table);
+
+    if (route[2] === 'rows') {
+      if (method === 'GET') return getRows(env, table, session, new URL(req.url));
+      if (method === 'POST') {
+        const body = await req.json();
+        return addRows(env, table, session, body);
+      }
+      if (method === 'DELETE') {
+        const body = await req.json();
+        return deleteTableRows(env, table, session, body);
+      }
+      if (method === 'PUT' && route[3]) {
+        const body = await req.json();
+        return updateRow(env, table, route[3], session, body);
+      }
+    }
+  }
+
+  return json({ error: 'Not found.' }, 404);
 }
