@@ -1,0 +1,8 @@
+{
+  "name": "vacation-calendar",
+  "private": true,
+  "scripts": {
+    "dev": "npx wrangler pages dev .",
+    "migrate-passwords": "node scripts/migrate-passwords.mjs"
+  }
+}

@@ -47,22 +47,12 @@
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
 
-/* ── Setup screen ── */
-#setup-screen { max-width: 480px; margin: 4rem auto; padding: 0 1rem; }
-#setup-screen h1 { font-size: 22px; font-weight: 600; margin-bottom: .25rem; }
-#setup-screen p  { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; }
-.setup-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; }
-.setup-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 1rem; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
 .field { margin-bottom: .75rem; }
-.field label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
 .field input, .field select {
   width: 100%; font-size: 14px; padding: 8px 10px;
   border: 1px solid var(--border2); border-radius: var(--radius);
   background: var(--surface); color: var(--text); font-family: inherit; }
 .field input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
-.field .hint { font-size: 11px; color: var(--text3); margin-top: 3px; }
-code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
-  background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
 
 /* ── Login screen ── */
 #login-screen { max-width: 360px; margin: 5rem auto; padding: 0 1rem; text-align: center; }
@@ -283,60 +273,6 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 </head>
 <body>
 
-<!-- ── Setup screen ── -->
-<div id="setup-screen">
-  <h1>Vacation Home Calendar</h1>
-  <p>Connect your Coda doc to get started. You only need to do this once.</p>
-  <div class="setup-card">
-    <h2>Coda credentials</h2>
-    <div class="field">
-      <label>API token</label>
-      <input type="password" id="cfg-token" placeholder="Paste your Coda API token">
-      <div class="hint">Coda → Account settings → API settings → Generate API token</div>
-    </div>
-    <div class="field">
-      <label>Doc ID</label>
-      <input type="text" id="cfg-doc" placeholder="e.g. abc123XYZ">
-      <div class="hint">From your doc URL: coda.io/d/<code>docId</code>/…</div>
-    </div>
-  </div>
-  <div class="setup-card">
-    <h2>Required Coda tables</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:.75rem">
-      Create a new Coda doc and add these four tables exactly as named:
-    </p>
-    <div style="font-size:13px;line-height:2">
-      <strong>Table 1 — <code>Reservations</code></strong><br>
-      Columns: <code>Owner</code> (text), <code>Type</code> (text), <code>StartDate</code> (date),
-      <code>EndDate</code> (date), <code>Status</code> (text), <code>Quarter</code> (text), <code>Note</code> (text),
-      <code>Guests</code> (text)
-      <br><small style="color:var(--text3)">One row per stay — a contiguous trip is stored as a single StartDate–EndDate range.
-      <code>Guests</code> is optional (names invited to join or stand in for the owner); the invite UI appears automatically once the column exists.</small>
-      <br><br>
-      <strong>Table 2 — <code>QuarterState</code></strong><br>
-      Columns: <code>Quarter</code> (text), <code>Phase</code> (text)
-      <br><br>
-      <strong>Table 3 — <code>Config</code></strong><br>
-      Columns: <code>Key</code> (text), <code>Value</code> (text)<br>
-      Add one row: Key = <code>StartDate</code>, Value = <code>2026-08-01</code>
-      <br><br>
-      <strong>Table 4 — <code>Users</code></strong><br>
-      Columns: <code>Name</code> (text), <code>Password</code> (text), <code>Role</code> (text),
-      <code>DaysPerQuarter</code> (number)
-      <br><small style="color:var(--text3)">One row per person who can sign in.
-      <code>Role</code> is one of <code>owner</code>, <code>contributor</code>,
-      <code>other_family</code>, or <code>guest</code>.
-      A <code>guest</code> can sign in and view the calendar but cannot book any days — give them a
-      <code>Password</code> just like everyone else. <code>other_family</code> is the former
-      &ldquo;guest&rdquo; role and can still book floating days when a quarter is open to all.</small>
-    </div>
-  </div>
-  <button class="btn primary" style="width:100%;padding:12px;font-size:15px" onclick="saveConfig()">
-    Connect and continue
-  </button>
-  <div class="err" id="cfg-err" style="display:none;text-align:center;margin-top:.5rem"></div>
-</div>
-
 <!-- ── Login screen ── -->
 <div id="login-screen" style="display:none">
   <h1>Vacation Home</h1>
@@ -352,10 +288,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
       onkeydown="if(event.key==='Enter')loginByName()">
   </div>
   <button id="login-submit-btn" class="btn primary" style="width:100%;padding:12px;font-size:15px;margin-bottom:.5rem" onclick="loginByName()">Log in</button>
-  <div id="login-loading" style="display:none;font-size:12px;color:var(--text3);text-align:center;margin-bottom:.5rem">Loading users…</div>
   <div class="err" id="login-err" style="display:none;margin-bottom:1rem;text-align:center"></div>
-  <br>
-  <button class="btn" style="width:100%;font-size:12px;color:var(--text3)" onclick="showSetup()">Change Coda connection</button>
 </div>
 
 <!-- ── App shell ── -->
@@ -415,116 +348,60 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 'use strict';
 
 // ════════════════════════════════════════════════════════
-// CONFIG & PERSISTENCE
+// SESSION
 // ════════════════════════════════════════════════════════
-const LS_CONFIG = 'vhc_config';
-let cfg = { token: '', docId: '' };
 let currentUser = null;
 
-function scrubHash() {
-  // Remove any credentials left in the URL so the token can't leak via history/shared links.
-  try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
-}
-function loadConfig() {
-  try {
-    const h = location.hash.slice(1);
-    if (h) {
-      const p = JSON.parse(atob(h));
-      if (p.token && p.docId) {
-        cfg = p;
-        // Migrate the inherited link into local storage, then strip it from the URL.
-        try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); } catch(e) {}
-        scrubHash();
-        return;
-      }
-    }
-  } catch(e) {}
-  try { const s = localStorage.getItem(LS_CONFIG); if (s) cfg = JSON.parse(s); } catch(e) {}
-}
-function saveConfig() {
-  const token = document.getElementById('cfg-token').value.trim();
-  const docId  = document.getElementById('cfg-doc').value.trim();
-  if (!token || !docId) { showErr('cfg-err', 'Please fill in both fields.'); return; }
-  cfg = { token, docId };
-  try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); } catch(e) {}
-  scrubHash(); // never put the token in the URL
-  Object.keys(tableIds).forEach(k => delete tableIds[k]);
-  showLogin();
-}
-function showSetup() {
-  document.getElementById('setup-screen').style.display = '';
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-shell').style.display = 'none';
-  document.getElementById('cfg-token').value = cfg.token || '';
-  document.getElementById('cfg-doc').value = cfg.docId || '';
-}
-async function showLogin() {
-  document.getElementById('setup-screen').style.display = 'none';
+function showLogin() {
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-shell').style.display = 'none';
-  // Always reset button state in case it was left disabled
   const btn = document.getElementById('login-submit-btn');
-  const hint = document.getElementById('login-loading');
   if (btn) { btn.disabled = false; btn.textContent = 'Log in'; }
-  if (hint) hint.style.display = 'none';
   document.getElementById('login-name').value = '';
   document.getElementById('login-pass').value = '';
   const errEl = document.getElementById('login-err');
   if (errEl) errEl.style.display = 'none';
-  // Load users if needed
-  if (cfg.token && cfg.docId) {
-    if (btn) btn.disabled = true;
-    if (hint) hint.style.display = '';
-    try {
-      await warmTableCache();
-      users = (await getRows('Users')).filter(r => r.Name);
-    } catch(e) {
-      if (errEl) { errEl.textContent = 'Could not load users: ' + e.message; errEl.style.display = 'block'; }
-    } finally {
-      if (btn) btn.disabled = false;
-      if (hint) hint.style.display = 'none';
-    }
-  }
 }
-function logout() { currentUser = null; johnSelecting = null; userSelecting = null; showLogin(); }
+async function logout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch(e) {}
+  currentUser = null; johnSelecting = null; userSelecting = null;
+  showLogin();
+}
 
 // ════════════════════════════════════════════════════════
-// CODA API
+// API  (all requests go through the RBAC proxy at /api)
 // ════════════════════════════════════════════════════════
-const BASE = 'https://coda.io/apis/v1';
 let tableIds = {};
 
 async function codaReq(method, path, body) {
-  const res = await fetch(BASE + path, {
+  const res = await fetch('/api' + path, {
     method,
-    headers: { 'Authorization': 'Bearer ' + cfg.token, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) { const t = await res.text(); throw new Error(`Coda API ${res.status}: ${t}`); }
+  if (!res.ok) { const t = await res.text(); throw new Error(`API ${res.status}: ${t}`); }
   return method === 'DELETE' ? null : res.json();
 }
 
-// Pre-warm: fetch all table IDs in one call
 async function warmTableCache() {
-  if (Object.keys(tableIds).length > 0) return; // already warm
-  const data = await codaReq('GET', `/docs/${cfg.docId}/tables`);
+  if (Object.keys(tableIds).length > 0) return;
+  const data = await codaReq('GET', '/tables');
   for (const t of data.items) tableIds[t.name] = t.id;
 }
 
 async function getTableId(tableName) {
   if (tableIds[tableName]) return tableIds[tableName];
   await warmTableCache();
-  if (!tableIds[tableName]) throw new Error(`Table "${tableName}" not found in doc.`);
+  if (!tableIds[tableName]) throw new Error(`Table "${tableName}" not found.`);
   return tableIds[tableName];
 }
 
-// getRows uses ?useColumnNames=true — Coda returns named keys directly, no column fetch needed
 async function getRows(tableName) {
   const tid = await getTableId(tableName);
   const rows = [];
   let pageToken = null;
   do {
-    const url = `/docs/${cfg.docId}/tables/${tid}/rows?limit=500&useColumnNames=true${pageToken ? '&pageToken=' + pageToken : ''}`;
+    const url = `/tables/${tid}/rows?limit=500&useColumnNames=true${pageToken ? '&pageToken=' + pageToken : ''}`;
     const data = await codaReq('GET', url);
     rows.push(...data.items);
     pageToken = data.nextPageToken;
@@ -546,7 +423,7 @@ async function addRows(tableName, cellsArray) {
   const ids = [];
   for (let i = 0; i < cellsArray.length; i += 500) {
     const batch = cellsArray.slice(i, i + 500);
-    const res = await codaReq('POST', `/docs/${cfg.docId}/tables/${tid}/rows`, {
+    const res = await codaReq('POST', `/tables/${tid}/rows`, {
       rows: batch.map(cells => ({
         cells: Object.entries(cells).map(([col, val]) => ({ column: col, value: val }))
       }))
@@ -559,16 +436,15 @@ async function addRows(tableName, cellsArray) {
 async function deleteRows(tableName, rowIds) {
   if (!rowIds.length) return;
   const tid = await getTableId(tableName);
-  // Coda batch delete: DELETE /rows with rowIds in body
   for (let i = 0; i < rowIds.length; i += 500) {
     const batch = rowIds.slice(i, i + 500);
-    await codaReq('DELETE', `/docs/${cfg.docId}/tables/${tid}/rows`, { rowIds: batch });
+    await codaReq('DELETE', `/tables/${tid}/rows`, { rowIds: batch });
   }
 }
 
 async function updateRow(tableName, rowId, cells) {
   const tid = await getTableId(tableName);
-  return codaReq('PUT', `/docs/${cfg.docId}/tables/${tid}/rows/${rowId}`, {
+  return codaReq('PUT', `/tables/${tid}/rows/${rowId}`, {
     row: { cells: Object.entries(cells).map(([col, val]) => ({ column: col, value: val })) }
   });
 }
@@ -763,7 +639,7 @@ async function loadAll() {
       getRows('Users').catch(() => []),
       getRows('Config').catch(() => []),
       // Detect the optional "Guests" column in parallel — no extra serial round-trip at login.
-      codaReq('GET', `/docs/${cfg.docId}/tables/${tableIds['Reservations']}/columns`).catch(() => null),
+      codaReq('GET', `/tables/${tableIds['Reservations']}/columns`).catch(() => null),
     ]);
     hasGuestsColumn = !!(resCols && (resCols.items || []).some(c => c.name === 'Guests'));
     // Honor the configured opening date if the Config table provides one — before computing the cutoff.
@@ -922,30 +798,26 @@ function duplicateUserNames() {
   return Object.keys(counts).filter(k => counts[k] > 1).map(k => display[k]);
 }
 
-function loginByName() {
+async function loginByName() {
   const name = (document.getElementById('login-name').value || '').trim();
   const pass = (document.getElementById('login-pass').value || '').trim();
   if (!name) { showErr('login-err', 'Please enter your name.'); return; }
-  const matches = usersNamed(name);
-  if (!matches.length) {
-    // Point them at an actual owner (by name) rather than a hardcoded person. showErr uses
-    // textContent, which already escapes, so the names are not HTML-escaped here.
-    const owners = users.filter(u => u.Name && (u.Role || '').toLowerCase().trim() === 'owner').map(u => u.Name.trim());
-    const who = owners.length === 1 ? `the owner (${owners[0]})`
-              : owners.length > 1 ? `an owner (${owners.slice(0, -1).join(', ')} or ${owners[owners.length - 1]})`
-              : 'an owner';
-    showErr('login-err', `Name not recognized. Ask ${who} to add you.`);
-    return;
+  const btn = document.getElementById('login-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, password: pass }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr('login-err', data.error || 'Login failed.'); return; }
+    login(data.name);
+  } catch(e) {
+    showErr('login-err', 'Connection error: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Log in'; }
   }
-  if (matches.length > 1) {
-    showErr('login-err', `More than one account is named “${name}”. Names must be unique — ask the owner to remove the duplicate in Coda.`);
-    return;
-  }
-  const user = matches[0];
-  if (user.Password && user.Password.trim() !== pass) {
-    showErr('login-err', 'Incorrect password.'); return;
-  }
-  login(user.Name); // always use canonical Name from Coda, not what user typed
 }
 
 async function login(who) {
@@ -1857,15 +1729,16 @@ async function changeMyPassword() {
   const cur = (document.getElementById('mypw-current').value || '').trim();
   const nw  = (document.getElementById('mypw-new').value || '').trim();
   const cf  = (document.getElementById('mypw-confirm').value || '').trim();
-  const me = users.find(u => u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase());
-  if (!me) { showErr('mypw-err', 'Your account could not be found.'); return; }
-  const existing = (me.Password || '').trim();
-  if (existing && existing !== cur) { showErr('mypw-err', 'Current password is incorrect.'); return; }
   if (!nw) { showErr('mypw-err', 'Enter a new password.'); return; }
   if (nw !== cf) { showErr('mypw-err', 'New passwords do not match.'); return; }
   try {
-    await updateRow('Users', me._id, { Password: nw });
-    me.Password = nw;
+    const res = await fetch('/api/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw }),
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr('mypw-err', data.error || 'Failed to change password.'); return; }
   } catch(e) { showErr('mypw-err', 'Error: ' + e.message); return; }
   ['mypw-current', 'mypw-new', 'mypw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('mypw-err').style.display = 'none';
@@ -1928,13 +1801,16 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;',
 // ════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════
-loadConfig();
 (async () => {
-  if (cfg.token && cfg.docId) {
-    await showLogin();
-  } else {
-    document.getElementById('setup-screen').style.display = '';
-  }
+  try {
+    const res = await fetch('/api/me');
+    if (res.ok) {
+      const data = await res.json();
+      await login(data.name);
+      return;
+    }
+  } catch(e) {}
+  showLogin();
 })();
 </script>
 </body>
