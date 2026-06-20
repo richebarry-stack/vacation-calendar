@@ -1207,12 +1207,8 @@ function renderCalendar() {
         : '';
       pill = `<span class="pill"${titleAttr} style="${st}">${esc(disp.label)}${gSuffix}${relIcon}</span>`;
     } else if (!other && !preOpen && !disp) {
-      const isPhaseC = getPhase(getQuarterOf(ds)) === 'C';
-      if (isPhaseC) {
-        pill = `<span class="pill" style="${PILL_STYLES.float_pending}">Float</span>`;
-      } else {
-        pill = `<span class="pill" style="${PILL_STYLES.unallocated}">Open</span>`;
-      }
+      // All unbooked days look the same regardless of phase.
+      pill = `<span class="pill" style="${PILL_STYLES.unallocated}">Available</span>`;
     }
 
     let click = '';
@@ -1332,10 +1328,9 @@ function renderLegend() {
     });
   const items = [
     ...people,
-    { bg:'var(--float-bg)',bd:'var(--float-bd)',label:'Floating' },
     { bg:'var(--appr-bg)', bd:'var(--appr-bd)', label:'Float approved' },
     { bg:'var(--pend-bg)', bd:'var(--pend-bd)', label:'Pending' },
-    { bg:'var(--surface2)',bd:'var(--border2)', label:'Open' },
+    { bg:'var(--surface2)',bd:'var(--border2)', label:'Available' },
   ];
   document.getElementById('legend').innerHTML = items.map(i =>
     `<div class="legend-item"><div class="legend-dot" style="background:${i.bg};border-color:${i.bd}"></div>${i.label}</div>`
