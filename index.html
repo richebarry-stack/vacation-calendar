@@ -129,6 +129,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 .day-cell.mine-releasable:hover { filter: brightness(.92); }
 .day-cell.user-selectable { cursor: pointer; }
 .day-cell.user-selectable:hover { filter: brightness(.96); }
+.day-cell[tabindex]:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; z-index: 1; }
 .day-cell.today { background: #eff6ff; }
 @media(prefers-color-scheme:dark){ .day-cell.today { background: #1e2a40; } }
 .day-num { display: block; font-size: 11px; font-weight: 600; color: var(--text3); margin-bottom: 3px; }
@@ -171,21 +172,6 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 .sel-counter { font-size: 13px; color: var(--text2); padding: 7px 14px;
   background: var(--surface2); border-radius: var(--radius); border: 1px solid var(--border); }
 
-/* ── Modal ── */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.42);
-  display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-.modal { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border2);
-  padding: 1.5rem; width: 100%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,.18); }
-.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
-.form-row { margin-bottom: 12px; }
-.form-row label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
-.form-row input, .form-row textarea, .form-row select {
-  width: 100%; font-size: 14px; padding: 8px 10px;
-  border: 1px solid var(--border2); border-radius: var(--radius);
-  background: var(--surface); color: var(--text); font-family: inherit; }
-.form-row textarea { resize: vertical; min-height: 64px; }
-.form-row input:focus, .form-row textarea:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
-.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; }
 .err { font-size: 12px; color: var(--red); margin-top: 8px; }
 
 /* ── Admin panel ── */
@@ -242,6 +228,15 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
   flex-wrap: wrap;
 }
 #john-sel-bar.active { display: flex; }
+
+/* ── Per-stay invite inputs in selection bars ── */
+.stays-wrap { width: 100%; order: 5; display: flex; flex-direction: column; gap: 6px; }
+.stays-wrap .stays-title { font-size: 12px; font-weight: 600; color: var(--text2); }
+.stay-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stay-row .stay-dates { font-size: 12px; font-weight: 600; color: var(--text); min-width: 150px; flex: 0 0 auto; }
+.stay-row input { flex: 1 1 180px; font-size: 13px; padding: 5px 9px; border: 1px solid var(--border2);
+  border-radius: var(--radius); background: var(--surface); color: var(--text); font-family: inherit; }
+.stay-row input:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
 .john-bar-count { font-size: 15px; font-weight: 600; color: var(--john-text); flex: 1; min-width: 160px; }
 .john-bar-count span { font-size: 13px; font-weight: 400; margin-left: 8px; }
 .john-bar-err { font-size: 12px; color: var(--red); width: 100%; margin-top: 2px; display: none; }
@@ -253,6 +248,25 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 .password-row { display: flex; align-items: center; gap: 8px; margin-bottom: .5rem; flex-wrap: wrap; }
 .password-row .uname { font-size: 14px; font-weight: 500; min-width: 90px; }
 .password-row input { font-size: 13px; padding: 5px 9px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--surface); color: var(--text); width: 140px; }
+
+/* ── Account management rows ── */
+.user-row { display: flex; align-items: center; gap: 8px; margin-bottom: .5rem; flex-wrap: wrap; }
+.user-row .uname { font-size: 14px; font-weight: 500; min-width: 110px; flex: 0 0 110px; }
+.user-row select, .user-row input { font-size: 13px; padding: 5px 9px; border: 1px solid var(--border2);
+  border-radius: var(--radius); background: var(--surface); color: var(--text); font-family: inherit; }
+.user-row .urole { width: 130px; }
+.user-row .udays { width: 90px; }
+.user-row input[type="password"], .user-row #new-user-name { width: 140px; }
+.user-row input:disabled { opacity: .5; }
+.user-row-head { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: .25rem; }
+.user-row-head span { display: inline-block; }
+.user-row-head .uname { min-width: 110px; flex: 0 0 110px; }
+.user-row-head .urole { width: 130px; }
+.user-row-head .udays { width: 90px; }
+.user-row.add-user { margin-top: .25rem; }
+.pw-change { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: .5rem; }
+.pw-change input { font-size: 13px; padding: 6px 9px; border: 1px solid var(--border2); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); width: 170px; font-family: inherit; }
 
 /* ── Loading spinner ── */
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border2);
@@ -294,20 +308,27 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
     <div style="font-size:13px;line-height:2">
       <strong>Table 1 — <code>Reservations</code></strong><br>
       Columns: <code>Owner</code> (text), <code>Type</code> (text), <code>StartDate</code> (date),
-      <code>EndDate</code> (date), <code>Status</code> (text), <code>Quarter</code> (text), <code>Note</code> (text)
-      <br><small style="color:var(--text3)">One row per day — StartDate and EndDate will be the same date for each row.</small>
+      <code>EndDate</code> (date), <code>Status</code> (text), <code>Quarter</code> (text), <code>Note</code> (text),
+      <code>Guests</code> (text)
+      <br><small style="color:var(--text3)">One row per stay — a contiguous trip is stored as a single StartDate–EndDate range.
+      <code>Guests</code> is optional (names invited to join or stand in for the owner); the invite UI appears automatically once the column exists.</small>
       <br><br>
-      <strong>Table 2 — <code>FloatRequests</code></strong><br>
-      Columns: <code>Name</code> (text), <code>Email</code> (text), <code>StartDate</code> (date),
-      <code>EndDate</code> (date), <code>Status</code> (text), <code>Note</code> (text)
+      <strong>Table 2 — <code>QuarterState</code></strong><br>
+      Columns: <code>Quarter</code> (text), <code>Phase</code> (text)
       <br><br>
-      <strong>Table 3 — <code>QuarterState</code></strong><br>
-      Columns: <code>Quarter</code> (text), <code>Phase</code> (text), <code>JohnDone</code> (text),
-      <code>RichDone</code> (text), <code>GregDone</code> (text)
-      <br><br>
-      <strong>Table 4 — <code>Config</code></strong><br>
+      <strong>Table 3 — <code>Config</code></strong><br>
       Columns: <code>Key</code> (text), <code>Value</code> (text)<br>
       Add one row: Key = <code>StartDate</code>, Value = <code>2026-08-01</code>
+      <br><br>
+      <strong>Table 4 — <code>Users</code></strong><br>
+      Columns: <code>Name</code> (text), <code>Password</code> (text), <code>Role</code> (text),
+      <code>DaysPerQuarter</code> (number)
+      <br><small style="color:var(--text3)">One row per person who can sign in.
+      <code>Role</code> is one of <code>owner</code>, <code>contributor</code>,
+      <code>other_family</code>, or <code>guest</code>.
+      A <code>guest</code> can sign in and view the calendar but cannot book any days — give them a
+      <code>Password</code> just like everyone else. <code>other_family</code> is the former
+      &ldquo;guest&rdquo; role and can still book floating days when a quarter is open to all.</small>
     </div>
   </div>
   <button class="btn primary" style="width:100%;padding:12px;font-size:15px" onclick="saveConfig()">
@@ -361,10 +382,11 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
       <div id="qflow-area" style="margin-bottom:.75rem"></div>
       <div id="john-sel-bar">
         <div class="john-bar-count">
-          Selecting John's days: <strong id="john-sel-count">0</strong> / 60 max
+          Selecting <span id="john-sel-who">your</span> days: <strong id="john-sel-count">0</strong> / <span id="john-sel-max">60</span> max
           <span id="john-sel-remaining">60 remaining</span>
         </div>
         <div class="john-bar-err" id="john-err"></div>
+        <div id="john-stays" class="stays-wrap" style="display:none"></div>
         <button class="btn" onclick="johnCancelSelection()">Cancel</button>
         <button class="btn primary" id="john-confirm-btn" onclick="johnConfirm()" disabled>Save selection</button>
       </div>
@@ -373,6 +395,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
           <span id="user-sel-name"></span> selecting: <strong id="user-sel-count">0</strong> days
           <span id="user-sel-hint" style="font-size:12px;color:var(--text2)">Click open days to toggle</span>
         </div>
+        <div id="user-stays" class="stays-wrap" style="display:none"></div>
         <button class="btn" onclick="userCancelSelection()">Cancel</button>
         <button class="btn primary" id="user-confirm-btn" onclick="userConfirm()" disabled>Save</button>
       </div>
@@ -386,42 +409,10 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
       </div>
       <div class="cal-grid" id="cal-grid"></div>
       <div id="admin-content"></div>
+      <div id="my-account"></div>
     </div>
   </main>
 </div>
-
-<!-- ── Float request modal ── -->
-<div class="overlay" id="req-modal" style="display:none">
-  <div class="modal">
-    <h3>Request a floating stay</h3>
-    <div class="form-row"><label>Your name *</label><input type="text" id="req-name" placeholder="Full name"></div>
-    <div class="form-row"><label>Email (optional)</label><input type="email" id="req-email" placeholder="you@example.com"></div>
-    <div class="form-row"><label>Check-in date *</label><input type="date" id="req-start" min="2026-08-01"></div>
-    <div class="form-row"><label>Check-out date *</label><input type="date" id="req-end" min="2026-08-01"></div>
-    <div class="form-row"><label>Note for John</label><textarea id="req-note" placeholder="Any context..."></textarea></div>
-    <div class="err" id="req-err" style="display:none"></div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('req-modal')">Cancel</button>
-      <button class="btn primary" onclick="submitFloatRequest()">Submit request</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Block picker modal (Rich/Greg) ── -->
-<div class="overlay" id="block-modal" style="display:none">
-  <div class="modal">
-    <h3 id="block-modal-title">Choose your fixed block</h3>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:1rem" id="block-modal-sub"></p>
-    <div id="block-modal-body"></div>
-    <div class="err" id="block-err" style="display:none"></div>
-    <div class="modal-btns">
-      <button class="btn" onclick="closeModal('block-modal')">Cancel</button>
-      <button class="btn primary" id="block-confirm-btn" onclick="confirmBlock()">Confirm block</button>
-    </div>
-  </div>
-</div>
-
-
 
 <script>
 'use strict';
@@ -433,10 +424,23 @@ const LS_CONFIG = 'vhc_config';
 let cfg = { token: '', docId: '' };
 let currentUser = null;
 
+function scrubHash() {
+  // Remove any credentials left in the URL so the token can't leak via history/shared links.
+  try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
+}
 function loadConfig() {
   try {
     const h = location.hash.slice(1);
-    if (h) { const p = JSON.parse(atob(h)); if (p.token && p.docId) { cfg = p; return; } }
+    if (h) {
+      const p = JSON.parse(atob(h));
+      if (p.token && p.docId) {
+        cfg = p;
+        // Migrate the inherited link into local storage, then strip it from the URL.
+        try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); } catch(e) {}
+        scrubHash();
+        return;
+      }
+    }
   } catch(e) {}
   try { const s = localStorage.getItem(LS_CONFIG); if (s) cfg = JSON.parse(s); } catch(e) {}
 }
@@ -446,7 +450,7 @@ function saveConfig() {
   if (!token || !docId) { showErr('cfg-err', 'Please fill in both fields.'); return; }
   cfg = { token, docId };
   try { localStorage.setItem(LS_CONFIG, JSON.stringify(cfg)); } catch(e) {}
-  try { history.replaceState(null, '', '#' + btoa(JSON.stringify(cfg))); } catch(e) {}
+  scrubHash(); // never put the token in the URL
   Object.keys(tableIds).forEach(k => delete tableIds[k]);
   showLogin();
 }
@@ -502,7 +506,7 @@ async function runDiagnostic() {
     tables = data.items;
     log('OK tables: ' + tables.map(t => t.name).join(', '));
   } catch(e) { log('FAIL tables: ' + e.message); return; }
-  for (const name of ['Reservations','FloatRequests','QuarterState','Config']) {
+  for (const name of ['Reservations','QuarterState','Config','Users']) {
     const t = tables.find(t => t.name === name);
     if (!t) { log('MISSING table: ' + name); continue; }
     try {
@@ -612,8 +616,10 @@ async function updateRow(tableName, rowId, cells) {
 // ════════════════════════════════════════════════════════
 // DATE HELPERS
 // ════════════════════════════════════════════════════════
-const START_DATE = new Date(2026, 7, 1);
-const TODAY = new Date(2026, 5, 12);
+// House opening date — default; overridden from the Config table's "StartDate" row at load if present.
+let START_DATE = new Date(2026, 7, 1);
+const _now = new Date();
+const TODAY = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
 
 function dStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -630,12 +636,6 @@ function dateRange(s, e) {
   while (c <= e) { days.push(dStr(c)); c = addDays(c,1); }
   return days;
 }
-function nextSaturday(d) { const r = new Date(d); while(r.getDay()!==6) r.setDate(r.getDate()+1); return r; }
-function gcWeekend(year, month0) {
-  const d = new Date(year, month0, 1);
-  while(d.getDay()!==6) d.setDate(d.getDate()+1);
-  return [dStr(d), dStr(addDays(d,1))];
-}
 function quarterKey(year, q) { return `${year}-Q${q}`; }
 function quarterMonths(q) { return [[0,1,2],[3,4,5],[6,7,8],[9,10,11]][q-1]; }
 function quarterStart(year, q) { return new Date(year, quarterMonths(q)[0], 1); }
@@ -648,23 +648,50 @@ function getQuarterOf(ds) {
   const q = Math.floor(m/3)+1;
   return quarterKey(y, q);
 }
-
-// GC weekends removed
-const GC_WEEKENDS = {};
+// Contiguous date runs from a set/array of YYYY-MM-DD strings (each run = one "stay").
+function contiguousRuns(days) {
+  const sorted = [...days].sort();
+  const runs = [];
+  for (const ds of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && dStr(addDays(fromStr(last.end), 1)) === ds) last.end = ds;
+    else runs.push({ start: ds, end: ds });
+  }
+  return runs;
+}
+// Collapse day records (each { ds, Type, Status, Guests }) into range rows, merging
+// consecutive days that share Type/Status/Guests — the basis of range-based storage.
+function daysToRanges(records) {
+  const sorted = [...records].sort((a, b) => a.ds.localeCompare(b.ds));
+  const out = [];
+  for (const r of sorted) {
+    const last = out[out.length - 1];
+    if (last && last.Type === r.Type && last.Status === r.Status && (last.Guests || '') === (r.Guests || '')
+        && dStr(addDays(fromStr(last.EndDate), 1)) === r.ds) {
+      last.EndDate = r.ds;
+    } else {
+      out.push({ Type: r.Type, Status: r.Status, Guests: r.Guests || '', StartDate: r.ds, EndDate: r.ds });
+    }
+  }
+  return out;
+}
+// The owner's display name (first Users row whose role is owner); falls back to 'John' for legacy data.
+function ownerName() {
+  const o = users.find(u => u.Name && (u.Role || '').toLowerCase().trim() === 'owner');
+  return o ? o.Name.trim() : 'John';
+}
 
 // ════════════════════════════════════════════════════════
 // APP STATE
 // ════════════════════════════════════════════════════════
-let reservations = [];   // from Coda Reservations table
-let floatRequests = [];
-let users = [];  // from Coda FloatRequests table
-let quarterStates = {};  // quarterKey -> { phase, JohnDone, RichDone, GregDone, _id }
+let reservations = [];   // from Coda Reservations table (range rows: one per contiguous stay)
+let users = [];  // from Coda Users table
+let hasGuestsColumn = false; // true when the Reservations table has an optional "Guests" column
+let quarterStates = {};  // quarterKey -> { phase, _id }
 let johnSelecting = null;  // { quarter, selected: Set<ds> }
 let userSelecting  = null;  // { quarter, selected: Set<ds> }
-let blockPicking = null;  // { user, quarter, blockNum, start, end }
 
-let curYear = 2026, curMonth = 7; // August (0-indexed) — updated to match new START_DATE
-let activeTab = 'calendar';
+let curYear = 2026, curMonth = 7; // August (0-indexed) — repositioned per quarter after login
 let selectedQuarter = null; // e.g. '2026-Q3'
 
 function allQuarters() {
@@ -770,25 +797,42 @@ function onQuarterChange() {
 async function loadAll() {
   try {
     await warmTableCache(); // one /tables call, then all getRows skip it
-    const [resRows, frRows, qsRows, userRows] = await Promise.all([
+    const [resRows, qsRows, userRows, cfgRows] = await Promise.all([
       getRows('Reservations'),
-      getRows('FloatRequests'),
       getRows('QuarterState'),
       getRows('Users').catch(() => []),
+      getRows('Config').catch(() => []),
     ]);
-    reservations = resRows;
-    floatRequests = frRows;
+    // Keep only reservations from the start of the current calendar year onward, so memory and
+    // rendering stay bounded as history grows. (Coda's API can't range-filter server-side, so this
+    // trims what we process rather than what we fetch — the row count is small thanks to range rows.)
+    const HISTORY_CUTOFF = dStr(new Date(TODAY.getFullYear(), 0, 1));
+    reservations = resRows.filter(r => !r.EndDate || r.EndDate.slice(0, 10) >= HISTORY_CUTOFF);
+    // De-duplicate QuarterState by Quarter deterministically (first by row id wins) so a stray
+    // duplicate row can't make the phase flap.
     quarterStates = {};
-    for (const r of qsRows) {
-      if (!r.Quarter) continue;
-      quarterStates[r.Quarter.trim()] = { _id: r._id, phase: r.Phase || 'A' };
-    }
+    [...qsRows].sort((a, b) => String(a._id).localeCompare(String(b._id))).forEach(r => {
+      if (!r.Quarter) return;
+      const k = r.Quarter.trim();
+      if (!quarterStates[k]) quarterStates[k] = { _id: r._id, phase: r.Phase || 'A' };
+    });
     users = userRows.filter(r => r.Name);
+    // Detect the optional "Guests" column so the invite feature self-activates only when present.
+    try {
+      const cols = await codaReq('GET', `/docs/${cfg.docId}/tables/${tableIds['Reservations']}/columns`);
+      hasGuestsColumn = (cols.items || []).some(c => c.name === 'Guests');
+    } catch(e) { hasGuestsColumn = false; }
+    // Honor the configured opening date if the Config table provides one.
+    const startCfg = cfgRows.find(r => (r.Key || '').trim() === 'StartDate');
+    if (startCfg && startCfg.Value) {
+      const d = fromStr(String(startCfg.Value).trim());
+      if (d && !isNaN(d.getTime())) START_DATE = d;
+    }
   } catch(e) {
     document.getElementById('cal-grid').innerHTML =
       `<div class="loading-bar" style="grid-column:1/-1;color:var(--red)">
-        <strong>Error loading from Coda:</strong> ${e.message}<br>
-        <small>Check token, Doc ID, and that all four tables exist with exact column names.</small>
+        <strong>Error loading from Coda:</strong> ${esc(e.message)}<br>
+        <small>Check token, Doc ID, and that all required tables exist with exact column names.</small>
       </div>`;
   }
 }
@@ -814,18 +858,12 @@ async function ensureQState(qk) {
 function buildDayMap() {
   const map = {};
 
-  // GC weekends
-  for (const [ds, v] of Object.entries(GC_WEEKENDS)) {
-    map[ds] = { type: 'gc_' + v.owner.toLowerCase(), label: v.label, owner: v.owner };
-  }
-
   // Reservations from Coda
   for (const r of reservations) {
     if (!r.StartDate || !r.EndDate || r.Status === 'denied') continue;
     const s = fromStr(r.StartDate), e = fromStr(r.EndDate);
     if (!s || !e) continue;
     dateRange(s, e).forEach(ds => {
-      if (GC_WEEKENDS[ds]) return; // GC always wins
       let type, label;
       if (r.Type === 'floating') {
         type  = r.Status === 'approved' ? 'float_approved' : 'float_pending';
@@ -839,24 +877,8 @@ function buildDayMap() {
                : 'rich_fixed'; // fallback — shows as reserved, not Open
         label = r.Owner;
       }
-      map[ds] = { type, label, owner: r.Owner, _resId: r._id, status: r.Status };
+      map[ds] = { type, label, owner: r.Owner, _resId: r._id, status: r.Status, guests: (r.Guests || '').trim() };
     });
-  }
-
-  // Float requests
-  for (const r of floatRequests) {
-    if (!r.StartDate || !r.EndDate) continue;
-    const s = fromStr(r.StartDate), e = fromStr(r.EndDate);
-    if (!s || !e) continue;
-    if (r.Status === 'approved') {
-      dateRange(s, e).forEach(ds => {
-        if (!GC_WEEKENDS[ds]) map[ds] = { type: 'float_approved', label: r.Name, owner: r.Name };
-      });
-    } else if (r.Status === 'pending' || !r.Status) {
-      dateRange(s, e).forEach(ds => {
-        if (!GC_WEEKENDS[ds] && !map[ds]) map[ds] = { type: 'float_pending', label: 'Pending', owner: r.Name };
-      });
-    }
   }
 
   return map;
@@ -869,21 +891,26 @@ function getPhase(qk) {
   return (getQState(qk).phase || 'A').toUpperCase();
 }
 function phaseLabel(p) {
-  return { A:'🏠 John picks first', B:'👥 Contributors picking', C:'🌐 Open to all' }[p] || p;
+  return { A:`🏠 ${ownerName()} picks first`, B:'👥 Contributors picking', C:'🌐 Open to all' }[p] || p;
 }
-// Get fixed-day quota for a named user from the Users table
+// Default fixed-day quota by role when the Users row doesn't specify DaysPerQuarter.
+function defaultQuota(role) {
+  role = (role || '').toLowerCase().trim();
+  return role === 'owner' ? 60 : role === 'contributor' ? 10 : 0;
+}
+// Get fixed-day quota for a named user — explicit DaysPerQuarter overrides the role default.
 function getUserQuota(name) {
   const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === (name || '').toLowerCase());
-  if (!u) return 60; // default
-  const dpq = parseInt(u.DaysPerQuarter);
-  return isNaN(dpq) ? 60 : dpq;
+  const role = u ? (u.Role || 'other_family').toLowerCase().trim() : 'other_family';
+  const dpq = u ? parseInt(u.DaysPerQuarter) : NaN;
+  return isNaN(dpq) ? defaultQuota(role) : dpq;
 }
 
 function canSelect(qk) {
   const ph = getPhase(qk);
   if (ph === 'A') return isOwner();
   if (ph === 'B') return isOwner();
-  return true; // C — anyone
+  return canReserve(); // C — anyone who can book (excludes view-only guests)
 }
 
 // ════════════════════════════════════════════════════════
@@ -892,20 +919,52 @@ function canSelect(qk) {
 function userClass(who) {
   return ['John','Rich','Greg'].includes(who) ? who.toLowerCase() : 'guest';
 }
+// Role is read from the Users table in Coda. Recognised roles:
+//   owner        — full control (John)
+//   contributor  — fixed-day quota + floating (Rich, Greg)
+//   other_family — may book floating days when a quarter is open to all (the former "guest" role)
+//   guest        — VIEW ONLY: can sign in and browse the calendar but cannot book anything
+// A blank/unknown role defaults to other_family so existing accounts keep their current access.
 function userRole() {
   const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase());
-  return u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
+  return u ? (u.Role || 'other_family').toLowerCase().trim() : 'other_family';
 }
 function isOwner()       { return userRole() === 'owner'; }
 function isContributor() { return userRole() === 'contributor'; }
 function isOwnerOrContrib() { return isOwner() || isContributor(); }
+function isGuest()        { return userRole() === 'guest'; }   // view-only role
+function canReserve()     { return !isGuest(); }               // everyone except guests may book
+
+// All Users rows whose name matches (case-insensitive). Names must be unique;
+// more than one match means a duplicate exists in Coda and must be cleaned up.
+function usersNamed(name) {
+  const n = (name || '').trim().toLowerCase();
+  if (!n) return [];
+  return users.filter(u => u.Name && u.Name.trim().toLowerCase() === n);
+}
+// Display names that appear on more than one Users row (case-insensitive).
+function duplicateUserNames() {
+  const counts = {}, display = {};
+  users.forEach(u => {
+    if (!u.Name) return;
+    const k = u.Name.trim().toLowerCase();
+    counts[k] = (counts[k] || 0) + 1;
+    display[k] = u.Name.trim();
+  });
+  return Object.keys(counts).filter(k => counts[k] > 1).map(k => display[k]);
+}
 
 function loginByName() {
   const name = (document.getElementById('login-name').value || '').trim();
   const pass = (document.getElementById('login-pass').value || '').trim();
   if (!name) { showErr('login-err', 'Please enter your name.'); return; }
-  const user = users.find(u => u.Name && u.Name.trim().toLowerCase() === name.toLowerCase());
-  if (!user) { showErr('login-err', 'Name not recognized. Ask Rich to add you in Coda.'); return; }
+  const matches = usersNamed(name);
+  if (!matches.length) { showErr('login-err', 'Name not recognized. Ask Rich to add you in Coda.'); return; }
+  if (matches.length > 1) {
+    showErr('login-err', `More than one account is named “${name}”. Names must be unique — ask the owner to remove the duplicate in Coda.`);
+    return;
+  }
+  const user = matches[0];
   if (user.Password && user.Password.trim() !== pass) {
     showErr('login-err', 'Incorrect password.'); return;
   }
@@ -966,6 +1025,7 @@ function renderAll() {
   renderLegend();
   renderCalendar();
   renderAdmin();
+  renderMyAccount();
 }
 
 function renderQFlow() {
@@ -995,8 +1055,9 @@ function renderQFlow() {
   const phase = getPhase(qk);
   const qLabel = `${y} Q${q} (${quarterStart(y,q).toLocaleDateString('en-US',{month:'short'})} – ${quarterEnd(y,q).toLocaleDateString('en-US',{month:'short', year:'numeric'})})`;
 
+  const owner = ownerName();
   const steps = [
-    { key:'A', label:'John first' },
+    { key:'A', label:`${owner} first` },
     { key:'B', label:'Contributors' },
     { key:'C', label:'Open to all' },
   ];
@@ -1009,12 +1070,25 @@ function renderQFlow() {
 
   let msgHTML = '';
   let actionHTML = '';
+
+  // Guests are view-only — show the schedule and a banner, never any booking action.
+  if (isGuest()) {
+    msgHTML = `<div class="info-box">👀 <strong>View-only access.</strong> You can browse the calendar, but booking days is reserved for family members.</div>`;
+    area.innerHTML = `<div class="qflow">
+      <div class="phase-steps" style="margin-bottom:.75rem">${stepsHTML}</div>
+      ${msgHTML}
+    </div>`;
+    actionRow.innerHTML = '';
+    actionRow.style.display = 'none';
+    return;
+  }
+
   const isJohn = isOwner();
   const isSelecting = johnSelecting && johnSelecting.quarter === qk;
 
   if (phase === 'A') {
     if (isJohn) {
-      msgHTML = `<div class="info-box purple">${isSelecting ? 'Click days on the calendar to select.' : 'John\u2019s turn to pick days. Only you can select right now.'}</div>`;
+      msgHTML = `<div class="info-box purple">${isSelecting ? 'Click days on the calendar to select.' : 'Your turn to pick days. Only you can select right now.'}</div>`;
       if (!isSelecting) {
         actionHTML = `<button class="btn primary" onclick="openJohnModal('${qk}')">Select my days</button>
                       <button class="btn" onclick="advancePhase('${qk}','B')">Open to contributors →</button>`;
@@ -1023,7 +1097,7 @@ function renderQFlow() {
                       <button class="btn" onclick="advancePhase('${qk}','B')">Open to contributors →</button>`;
       }
     } else {
-      msgHTML = `<div class="info-box">John is picking his days. Check back once he opens it up.</div>`;
+      msgHTML = `<div class="info-box">${esc(owner)} is picking days. Check back once it opens up.</div>`;
     }
   } else if (phase === 'B') {
     const isUserSel = userSelecting && userSelecting.quarter === qk;
@@ -1031,11 +1105,11 @@ function renderQFlow() {
       const sel = isSelecting ? 'Click days on the calendar to adjust.' : 'Contributors can now pick too. You can still adjust your days.';
       msgHTML = `<div class="info-box purple">${sel}</div>`;
       if (!isSelecting) {
-        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to John first</button>
+        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to ${esc(owner)} first</button>
                       <button class="btn" onclick="openJohnModal('${qk}')">Adjust my days</button>
                       <button class="btn success" onclick="advancePhase('${qk}','C')">Open to all →</button>`;
       } else {
-        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to John first</button>
+        actionHTML = `<button class="btn amber" onclick="advancePhase('${qk}','A')">← Back to ${esc(owner)} first</button>
                       <button class="btn" disabled>Adjust my days</button>
                       <button class="btn success" onclick="advancePhase('${qk}','C')">Open to all →</button>`;
       }
@@ -1048,7 +1122,7 @@ function renderQFlow() {
     }
   } else {
     const isUserSel = userSelecting && userSelecting.quarter === qk;
-    msgHTML = `<div class="info-box green">${isUserSel ? 'Click days on the calendar.' : 'Select your days or request a floating stay.'}</div>`;
+    msgHTML = `<div class="info-box green">${isUserSel ? 'Click days on the calendar.' : 'Select your days for this quarter.'}</div>`;
     if (!isUserSel) {
       actionHTML = `<button class="btn primary" onclick="openUserSelection('${qk}')">Select my days</button>`;
     } else {
@@ -1119,9 +1193,7 @@ function renderCalendar() {
     // userSelecting.ordered is an array preserving insertion order
     let isOverQuota = false;
     if (isUserSelected) {
-      const u2 = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
-      const r2 = u2 ? (u2.Role || 'guest').toLowerCase().trim() : 'guest';
-      const dispQuota = (r2 === 'contributor' || r2 === 'owner') ? getUserQuota(currentUser) : null;
+      const dispQuota = isOwnerOrContrib() ? getUserQuota(currentUser) : null;
       if (dispQuota !== null) {
         const selArr = userSelecting.ordered || [...userSelecting.selected];
         const pos = selArr.indexOf(ds);
@@ -1149,14 +1221,18 @@ function renderCalendar() {
       pill = `<span class="pill" style="background:var(--john-bg);color:var(--john-text);border-color:var(--john-bd)">John ✓</span>`;
     } else if (isUserSelected && !other) {
       if (isOverQuota) {
-        pill = `<span class="pill" style="background:var(--amber);color:#fff;border-color:var(--amber)">${currentUser} ~ float</span>`;
+        pill = `<span class="pill" style="background:var(--amber);color:#fff;border-color:var(--amber)">${esc(currentUser)} ~ float</span>`;
       } else {
-        pill = `<span class="pill" style="background:var(--rich-bg);color:var(--rich-text);border-color:var(--rich-bd)">${currentUser} ✓</span>`;
+        pill = `<span class="pill" style="background:var(--rich-bg);color:var(--rich-text);border-color:var(--rich-bd)">${esc(currentUser)} ✓</span>`;
       }
     } else if (disp && !other) {
       const st = PILL_STYLES[disp.type] || PILL_STYLES.unallocated;
       const relIcon = isMyReservation ? ' ×' : '';
-      pill = `<span class="pill" style="${st}">${disp.label}${relIcon}</span>`;
+      const gSuffix = disp.guests ? ` +${esc(disp.guests)}` : '';
+      const titleAttr = disp.guests
+        ? ` title="${esc(disp.owner)} reserved — with or instead of them: ${esc(disp.guests)}"`
+        : '';
+      pill = `<span class="pill"${titleAttr} style="${st}">${esc(disp.label)}${gSuffix}${relIcon}</span>`;
     } else if (!other && !preOpen && !disp) {
       const isPhaseC = getPhase(getQuarterOf(ds)) === 'C';
       if (isPhaseC) {
@@ -1170,7 +1246,9 @@ function renderCalendar() {
     if (isJohnSelectable)      click = `onclick="toggleJohnDay('${ds}')"`;
     else if (isUserSelectable) click = `onclick="toggleUserDay('${ds}')"`;
     else if (isMyReservation)  click = `onclick="releaseDay('${ds}')"`;
-    html += `<div class="${cls}" ${click}><span class="day-num">${d.getDate()}</span>${pill}</div>`;
+    // Make actionable cells keyboard-focusable and Enter/Space-activatable.
+    const a11y = click ? ` role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"` : '';
+    html += `<div class="${cls}" ${click}${a11y}><span class="day-num">${d.getDate()}</span>${pill}</div>`;
   });
 
   document.getElementById('cal-grid').innerHTML = html;
@@ -1180,6 +1258,7 @@ function renderStats() {
   const qk = selectedQuarter;
   const y  = curYear;
 
+  // Count DAYS (not rows) so multi-day range rows are tallied correctly.
   function tally(owner, type, status, scope) {
     return reservations.filter(r => {
       if (r.Owner !== owner) return false;
@@ -1189,7 +1268,7 @@ function renderStats() {
       if (scope === 'quarter') return r.Quarter === qk;
       if (scope === 'year')    return ds.startsWith(String(y));
       return false;
-    }).length;
+    }).reduce((n, r) => n + (r.StartDate && r.EndDate ? dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).length : 1), 0);
   }
 
   // All owners+contributors from users table; fall back to hardcoded trio
@@ -1225,7 +1304,7 @@ function renderStats() {
     const remQ     = Math.max(0, quota - fixedQ);
     const remY     = Math.max(0, yearQuota - fixedY);
     return `<div class="stat">
-      <div class="stat-label" style="color:${p.color}">${p.name} — fixed</div>
+      <div class="stat-label" style="color:${p.color}">${esc(p.name)} — fixed</div>
       <div class="stat-val" style="font-size:12px;line-height:1.8">
         <span>${qLabel}: <strong style="color:${p.color}">${fixedQ}</strong> / ${quota}</span>
         <span style="color:var(--text3)"> · ${remQ} left</span><br>
@@ -1260,7 +1339,7 @@ function renderStats() {
     }
 
     return `<div class="stat">
-      <div class="stat-label" style="color:${p.color}">${p.name} — float</div>
+      <div class="stat-label" style="color:${p.color}">${esc(p.name)} — float</div>
       <div class="stat-val" style="font-size:12px;line-height:1.8">
         ${floatLine(fApprQ, fPendQ, qLabel)}<br>
         ${floatLine(fApprY, fPendY, String(y))}
@@ -1302,23 +1381,51 @@ function renderAdmin() {
       ? `<button class="btn success" style="font-size:12px;padding:5px 11px" onclick="resolveFloat('${r._id}','approved')">Approve</button>
          <button class="btn danger"  style="font-size:12px;padding:5px 11px" onclick="resolveFloat('${r._id}','denied')">Deny</button>`
       : `<span class="badge ${type}">${type.charAt(0).toUpperCase()+type.slice(1)}</span>`;
+    const dates = r.StartDate && r.EndDate && r.StartDate.slice(0,10) !== r.EndDate.slice(0,10)
+      ? fmtRange(r.StartDate, r.EndDate) : fmtDate(r.StartDate);
     return `<div class="req-card">
       <div class="info">
-        <div class="rname">${r.Owner}</div>
-        <div class="rdates">${fmtDate(r.StartDate)}${r.Note ? ' · ' + r.Note : ''}</div>
+        <div class="rname">${esc(r.Owner)}</div>
+        <div class="rdates">${dates}${r.Guests ? ' · with/or ' + esc(r.Guests) : ''}${r.Note ? ' · ' + esc(r.Note) : ''}</div>
       </div>
       <div class="actions">${actions}</div>
     </div>`;
   }
 
-  // Password management
-  const pwRows = users.map(u => `
-    <div class="password-row">
-      <span class="uname">${u.Name}</span>
+  // Account management
+  const dupNames = duplicateUserNames();
+  const dupWarn = dupNames.length
+    ? `<div class="info-box" style="background:var(--pend-bg);color:var(--pend-text);border-color:var(--pend-bd);margin-bottom:.75rem">
+        <strong>⚠ Duplicate user name${dupNames.length > 1 ? 's' : ''}:</strong> ${dupNames.map(esc).join(', ')}.
+        Each name must be unique — these accounts can't log in until you remove the extra row(s) in the Users table in Coda.
+      </div>`
+    : '';
+  const userRows = users.map(u => {
+    const role = (u.Role || 'other_family').toLowerCase().trim();
+    const isDup = dupNames.some(n => n.toLowerCase() === (u.Name || '').trim().toLowerCase());
+    const hasQuota = role === 'owner' || role === 'contributor';
+    return `
+    <div class="user-row">
+      <span class="uname">${esc(u.Name)}${isDup ? ' <span style="color:var(--red);font-weight:600">(dup)</span>' : ''}</span>
+      <select class="urole" onchange="setUserRole('${u._id}', this.value)">${roleOptions(role)}</select>
+      <input class="udays" type="number" min="0" step="1" title="Fixed days per quarter"
+        value="${hasQuota ? getUserQuota(u.Name) : ''}" ${hasQuota ? '' : 'disabled placeholder="—"'}
+        onchange="setUserQuota('${u._id}', this.value)">
       <input type="password" id="pw-${u._id}" placeholder="new password" autocomplete="new-password">
-      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="setPassword('${u._id}','${u.Name}')">Set</button>
+      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="setPassword('${u._id}')">Set</button>
+      <button class="btn danger" style="font-size:12px;padding:5px 9px" title="Delete account" onclick="deleteUser('${u._id}')">✕</button>
       <span id="pw-status-${u._id}" style="font-size:12px;color:var(--green);display:none">Saved ✓</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  const addForm = `
+    <div class="user-row add-user">
+      <input id="new-user-name" placeholder="Name">
+      <select id="new-user-role" class="urole">${roleOptions('contributor')}</select>
+      <input id="new-user-days" class="udays" type="number" min="0" step="1" placeholder="days (opt)">
+      <input id="new-user-pass" type="password" placeholder="password" autocomplete="new-password">
+      <button class="btn primary" style="font-size:12px;padding:5px 10px" onclick="addUser()">Create</button>
+    </div>
+    <div class="err" id="new-user-err" style="display:none"></div>`;
 
   el.innerHTML = `
     <div class="admin-section">
@@ -1334,25 +1441,75 @@ function renderAdmin() {
       ${denied.map(r=>floatCard(r,'denied')).join('')}
     </div>` : ''}
     <div class="admin-section">
-      <h3>Manage passwords</h3>
-      ${pwRows || '<p class="empty">No users loaded.</p>'}
+      <h3>Manage accounts</h3>
+      ${dupWarn}
+      <div class="user-row user-row-head">
+        <span class="uname">Name</span><span class="urole">Role</span><span class="udays">Days/qtr</span><span>Password</span><span></span>
+      </div>
+      ${userRows || '<p class="empty">No users loaded.</p>'}
+      <h4 style="font-size:13px;font-weight:600;color:var(--text2);margin:1rem 0 .5rem">Create a new account</h4>
+      ${addForm}
     </div>`;
 }
 
 // ════════════════════════════════════════════════════════
-// JOHN — DAY SELECTION
+// PER-STAY INVITE HELPERS (shared by both selection bars)
+// ════════════════════════════════════════════════════════
+function prefillStayGuests(selection, who, qk) {
+  selection.guests = {};
+  if (!hasGuestsColumn) return;
+  const existing = reservations.filter(r => r.Owner === who && r.Quarter === qk && r.Guests);
+  contiguousRuns(selection.selected).forEach(run => {
+    const cover = existing.find(r => r.StartDate.slice(0,10) <= run.start && run.start <= r.EndDate.slice(0,10));
+    if (cover) selection.guests[run.start] = (cover.Guests || '').trim();
+  });
+}
+function onStayGuestInput(containerId, startDs, value) {
+  const sel = containerId === 'john-stays' ? johnSelecting : userSelecting;
+  if (!sel) return;
+  sel.guests = sel.guests || {};
+  sel.guests[startDs] = value;
+}
+function renderStaysInputs(containerId, selection) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!hasGuestsColumn || !selection || selection.selected.size === 0) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const runs = contiguousRuns(selection.selected);
+  selection.guests = selection.guests || {};
+  const valid = new Set(runs.map(r => r.start));
+  Object.keys(selection.guests).forEach(k => { if (!valid.has(k)) delete selection.guests[k]; });
+  el.style.display = '';
+  el.innerHTML = `<div class="stays-title">Who else is invited? (with or instead of you — one list per trip)</div>` +
+    runs.map(run => {
+      const val = selection.guests[run.start] || '';
+      const label = run.start === run.end ? fmtDate(run.start) : fmtRange(run.start, run.end);
+      return `<div class="stay-row"><span class="stay-dates">${label}</span>` +
+        `<input type="text" placeholder="names (optional)" value="${esc(val)}" ` +
+        `oninput="onStayGuestInput('${containerId}','${run.start}', this.value)"></div>`;
+    }).join('');
+}
+// Map each selected day -> the invite list for its contiguous stay.
+function dayGuestsLookup(selection) {
+  const lookup = {};
+  contiguousRuns(selection.selected).forEach(run => {
+    const g = (selection.guests && selection.guests[run.start]) || '';
+    dateRange(fromStr(run.start), fromStr(run.end)).forEach(ds => { lookup[ds] = g; });
+  });
+  return lookup;
+}
+
+// ════════════════════════════════════════════════════════
+// OWNER — DAY SELECTION (phase A/B)
 // ════════════════════════════════════════════════════════
 function openJohnModal(qk) {
-  // If already selecting this same quarter, just re-show the bar (preserve selections)
+  const who = currentUser; // the owner is the one using this bar
   if (!johnSelecting || johnSelecting.quarter !== qk) {
-    // Seed with any already-confirmed days for this quarter (so re-opening after partial save works)
     const alreadySaved = new Set();
-    reservations.filter(r => r.Owner === 'John' && r.Quarter === qk).forEach(r => {
-      if (r.StartDate && r.EndDate) {
-        dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).forEach(ds => alreadySaved.add(ds));
-      }
+    reservations.filter(r => r.Owner === who && r.Quarter === qk).forEach(r => {
+      if (r.StartDate && r.EndDate) dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).forEach(ds => alreadySaved.add(ds));
     });
-    johnSelecting = { quarter: qk, selected: alreadySaved };
+    johnSelecting = { quarter: qk, selected: alreadySaved, guests: {} };
+    prefillStayGuests(johnSelecting, who, qk);
   }
   setSaving('john-sel-bar', 'john-confirm-btn', false);
   updateJohnBar();
@@ -1363,25 +1520,26 @@ function openJohnModal(qk) {
 
 function updateJohnBar() {
   if (!johnSelecting) return;
+  const quota = getUserQuota(currentUser);
   const cnt = johnSelecting.selected.size;
-  const rem = 60 - cnt;
+  const rem = quota - cnt;
   document.getElementById('john-sel-count').textContent = cnt;
+  const maxEl = document.getElementById('john-sel-max');
+  if (maxEl) maxEl.textContent = quota;
   const remEl = document.getElementById('john-sel-remaining');
   if (rem > 0) { remEl.textContent = rem + ' remaining'; remEl.style.color = ''; }
   else if (rem === 0) { remEl.textContent = '— at limit'; remEl.style.color = 'var(--green)'; }
   else { remEl.textContent = Math.abs(rem) + ' over limit'; remEl.style.color = 'var(--red)'; }
   document.getElementById('john-confirm-btn').disabled = cnt < 1;
+  renderStaysInputs('john-stays', johnSelecting);
 }
 
 function toggleJohnDay(ds) {
   if (!johnSelecting) return;
-  if (johnSelecting.selected.has(ds)) {
-    johnSelecting.selected.delete(ds);
-  } else {
-    johnSelecting.selected.add(ds);
-  }
-  // Prevent selecting more than 60
-  if (johnSelecting.selected.size > 60) { johnSelecting.selected.delete(ds); }
+  if (johnSelecting.selected.has(ds)) johnSelecting.selected.delete(ds);
+  else johnSelecting.selected.add(ds);
+  // Prevent selecting more than the owner's quota
+  if (johnSelecting.selected.size > getUserQuota(currentUser)) johnSelecting.selected.delete(ds);
   updateJohnBar();
   document.getElementById('john-err').style.display = 'none';
   renderCalendar();
@@ -1389,26 +1547,22 @@ function toggleJohnDay(ds) {
 
 async function johnConfirm() {
   if (!johnSelecting) return;
-  const sel = johnSelecting.selected;
-  if (sel.size < 1) {
-    const el = document.getElementById('john-err');
-    el.textContent = 'Please select at least 1 day.';
-    el.style.display = 'block';
-    return;
-  }
+  if (johnSelecting.selected.size < 1) { showErr('john-err', 'Please select at least 1 day.'); return; }
   setSaving('john-sel-bar', 'john-confirm-btn', true);
-  const qk = johnSelecting.quarter;
-  const days = [...sel].sort();
-  const newCells = days.map(ds => ({
-    Owner: 'John', Type: 'fixed', StartDate: ds, EndDate: ds,
-    Status: 'confirmed', Quarter: qk, Note: ''
+  const who = currentUser, qk = johnSelecting.quarter;
+  const gl = dayGuestsLookup(johnSelecting);
+  const records = [...johnSelecting.selected].sort().map(ds => ({ ds, Type: 'fixed', Status: 'confirmed', Guests: gl[ds] || '' }));
+  const newCells = daysToRanges(records).map(r => ({
+    Owner: who, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
+    Status: r.Status, Quarter: qk, Note: '', ...(hasGuestsColumn ? { Guests: r.Guests } : {})
   }));
   try {
-    const existing = reservations.filter(r => r.Owner === 'John' && r.Quarter === qk);
-    await deleteRows('Reservations', existing.map(r => r._id));
+    const existing = reservations.filter(r => r.Owner === who && r.Quarter === qk);
+    // Add new rows BEFORE deleting old ones, so a mid-save failure can't lose the booking.
     const newIds = await addRows('Reservations', newCells);
     await ensureQState(qk);
-    reservations = reservations.filter(r => !(r.Owner === 'John' && r.Quarter === qk));
+    await deleteRows('Reservations', existing.map(r => r._id));
+    reservations = reservations.filter(r => !(r.Owner === who && r.Quarter === qk));
     (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
   } catch(e) { setSaving('john-sel-bar', 'john-confirm-btn', false); showErr('john-err', 'Error saving: ' + e.message); return; }
 
@@ -1448,22 +1602,23 @@ async function advancePhase(qk, newPhase) {
 // GENERIC USER SELECTION (non-John or John in B/C)
 // ════════════════════════════════════════════════════════
 function openUserSelection(qk) {
+  if (!canReserve()) return; // guests are view-only
   if (!userSelecting || userSelecting.quarter !== qk) {
-    const fixed  = [];
-    const floats = [];
+    const fixed = [], floats = [];
     reservations.filter(r => r.Owner === currentUser && r.Quarter === qk).forEach(r => {
-      if (!r.StartDate) return;
-      const ds = dStr(fromStr(r.StartDate));
-      if (r.Type === 'floating') floats.push(ds); else fixed.push(ds);
+      if (!r.StartDate || !r.EndDate) return;
+      dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).forEach(ds => {
+        if (r.Type === 'floating') floats.push(ds); else fixed.push(ds);
+      });
     });
     fixed.sort(); floats.sort();
     const ordered = [...fixed, ...floats];
-    const quota = (isContributor() || isOwner()) ? getUserQuota(currentUser) : null;
-    userSelecting = { quarter: qk, selected: new Set(ordered), ordered, quota };
+    const quota = isOwnerOrContrib() ? getUserQuota(currentUser) : null;
+    userSelecting = { quarter: qk, selected: new Set(ordered), ordered, quota, guests: {} };
+    prefillStayGuests(userSelecting, currentUser, qk);
   }
   document.getElementById('user-sel-name').textContent = currentUser;
   document.getElementById('user-sel-bar').classList.add('active');
-  // Reset button state in case it was left in Saving... state
   setSaving('user-sel-bar', 'user-confirm-btn', false);
   updateUserBar();
   renderCalendar();
@@ -1495,9 +1650,7 @@ function updateUserBar() {
   document.getElementById('user-confirm-btn').disabled = (cnt < 1 && !hasSaved);
   const hint = document.getElementById('user-sel-hint');
   if (hint) {
-    const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
-    const detectedRole = u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
-    const displayQuota = (detectedRole === 'contributor' || detectedRole === 'owner') ? getUserQuota(currentUser) : null;
+    const displayQuota = isOwnerOrContrib() ? getUserQuota(currentUser) : null;
     if (userSelecting && userSelecting.quota != null) {
       const nFixed = Math.min(cnt, displayQuota);
       const nFloat = Math.max(0, cnt - displayQuota);
@@ -1511,6 +1664,7 @@ function updateUserBar() {
       hint.style.fontSize = '';
     }
   }
+  renderStaysInputs('user-stays', userSelecting);
 }
 
 function userCancelSelection() {
@@ -1535,6 +1689,7 @@ function toggleUserDay(ds) {
 
 async function userConfirm() {
   if (!userSelecting) return;
+  if (!canReserve()) return; // guests cannot book
   const hasSaved = reservations.some(r => r.Owner === currentUser && r.Quarter === userSelecting.quarter);
   if (userSelecting.selected.size < 1 && !hasSaved) return;
   setSaving('user-sel-bar', 'user-confirm-btn', true);
@@ -1542,36 +1697,29 @@ async function userConfirm() {
   const newDays = [...userSelecting.selected].sort();
 
   const existing = reservations.filter(r => r.Owner === currentUser && r.Quarter === qk);
-  // Always derive role fresh from users array at save time
-  const saveRole = (() => {
-    const u = users.find(u => u.Name && u.Name.trim().toLowerCase() === currentUser.toLowerCase());
-    return u ? (u.Role || 'guest').toLowerCase().trim() : 'guest';
-  })();
-  const saveQuota = (saveRole === 'contributor' || saveRole === 'owner') ? getUserQuota(currentUser) : null;
+  // Derive role fresh at save time (owner/contributor get a fixed-day quota; others are all floating)
+  const saveRole = userRole();
+  const saveQuota = isOwnerOrContrib() ? getUserQuota(currentUser) : null;
   const ordered = userSelecting.ordered || [...newDays]; // click order determines fixed vs float
+  const gl = dayGuestsLookup(userSelecting);             // per-stay invite list per day
 
-  const newCells = newDays.map(ds => {
-    let isFloating;
-    if (saveRole === 'owner') {
-      isFloating = false;
-    } else if (saveRole === 'contributor') {
-      const pos = ordered.indexOf(ds);
-      isFloating = saveQuota !== null && pos >= saveQuota;
-    } else {
-      isFloating = true;
-    }
-    return {
-      Owner: currentUser,
-      Type:   isFloating ? 'floating' : 'fixed',
-      StartDate: ds, EndDate: ds,
-      Status: isFloating ? 'pending' : 'confirmed',
-      Quarter: qk, Note: ''
-    };
+  const records = newDays.map(ds => {
+    let floating;
+    if (saveRole === 'owner') floating = false;
+    else if (saveRole === 'contributor') floating = saveQuota !== null && ordered.indexOf(ds) >= saveQuota;
+    else floating = true;
+    return { ds, Type: floating ? 'floating' : 'fixed', Status: floating ? 'pending' : 'confirmed', Guests: gl[ds] || '' };
   });
+  // Collapse into range rows (split where type/status/guests change or dates aren't consecutive).
+  const newCells = daysToRanges(records).map(r => ({
+    Owner: currentUser, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
+    Status: r.Status, Quarter: qk, Note: '', ...(hasGuestsColumn ? { Guests: r.Guests } : {})
+  }));
   try {
-    await deleteRows('Reservations', existing.map(r => r._id));
+    // Add new rows BEFORE deleting old ones, so a mid-save failure can't lose the booking.
     const newIds = await addRows('Reservations', newCells);
     await ensureQState(qk);
+    await deleteRows('Reservations', existing.map(r => r._id));
     reservations = reservations.filter(r => !(r.Owner === currentUser && r.Quarter === qk));
     (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
     userSelecting = null;
@@ -1585,136 +1733,31 @@ async function userConfirm() {
 }
 
 async function releaseDay(ds) {
-  // With one-row-per-day storage, releasing is just deleting the matching row
-  const row = reservations.find(r =>
-    r.Owner === currentUser && dStr(fromStr(r.StartDate)) === ds
-  );
+  // Find the stay (range row) that covers this day for the current user.
+  const row = reservations.find(r => r.Owner === currentUser && r.StartDate && r.EndDate &&
+    r.StartDate.slice(0, 10) <= ds && ds <= r.EndDate.slice(0, 10));
   if (!row) { alert('No reservation found for ' + fmtDate(ds)); return; }
-  if (!confirm('Release ' + fmtDate(ds) + '?')) return;
+  const span = dateRange(fromStr(row.StartDate), fromStr(row.EndDate));
+  const isRange = span.length > 1;
+  if (!confirm(isRange
+    ? `Release ${fmtDate(ds)} from your ${fmtRange(row.StartDate, row.EndDate)} stay?`
+    : `Release ${fmtDate(ds)}?`)) return;
+  // Re-collapse the remaining days into sub-ranges, preserving type/status/guests.
+  const remaining = span.filter(d => d !== ds);
+  const subCells = daysToRanges(remaining.map(d => ({ ds: d, Type: row.Type, Status: row.Status, Guests: (row.Guests || '').trim() })))
+    .map(r => ({ Owner: currentUser, Type: r.Type, StartDate: r.StartDate, EndDate: r.EndDate,
+      Status: r.Status, Quarter: row.Quarter, Note: row.Note || '', ...(hasGuestsColumn ? { Guests: r.Guests } : {}) }));
   try {
+    // Add the split remainder BEFORE deleting the original row (no-loss).
+    const newIds = subCells.length ? await addRows('Reservations', subCells) : [];
     await deleteRows('Reservations', [row._id]);
     reservations = reservations.filter(r => r._id !== row._id);
+    (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...subCells[i] }));
   } catch(e) { alert('Error releasing day: ' + e.message); return; }
   renderAll();
 }
 
-// daysToRanges removed — one row per day, no ranges needed
-
-// ════════════════════════════════════════════════════════
-// RICH / GREG — BLOCK PICKER
-// ════════════════════════════════════════════════════════
-function openBlockPicker(qk, blockNum) {
-  const user = currentUser;
-  const [y, qn] = [parseInt(qk.split('-Q')[0]), parseInt(qk.split('-Q')[1])];
-  const months = quarterMonths(qn);
-  const qs = quarterStart(y, qn);
-  const qe = quarterEnd(y, qn);
-
-  // Check if block 1 already done
-  const existingBlocks = reservations.filter(r =>
-    r.Owner === user && r.Type === 'fixed' && r.Quarter === qk
-  );
-  if (blockNum === 2 && existingBlocks.length < 1) {
-    alert('Please confirm block 1 first.'); return;
-  }
-  if (existingBlocks.length >= blockNum) {
-    alert(`Block ${blockNum} is already confirmed.`); return;
-  }
-
-  blockPicking = { user, quarter: qk, blockNum, year: y, qStart: qs, qEnd: qe };
-
-  document.getElementById('block-modal-title').textContent = `${user} — block ${blockNum} of 2`;
-  document.getElementById('block-modal-sub').textContent =
-    `Choose the Saturday of your 5-day block (Thu–Mon). It must fall within ${qk}.`;
-  document.getElementById('block-err').style.display = 'none';
-
-  // Build Saturday options within quarter
-  let html = '<div class="field"><label>Start Saturday</label><select id="block-sat-sel">';
-  let d = new Date(qs);
-  while(d.getDay()!==6) d=addDays(d,1);
-  while(d <= addDays(qe,-1)) {
-    const thu = addDays(d,-2), mon = addDays(d,2);
-    if (thu >= qs && mon <= qe) {
-      const label = `${fmtDate(dStr(thu))} → ${fmtDate(dStr(mon))} (${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][thu.getDay()]}–${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][mon.getDay()]})`;
-      html += `<option value="${dStr(thu)}">${label}</option>`;
-    }
-    d = addDays(d,7);
-  }
-  html += '</select></div>';
-  document.getElementById('block-modal-body').innerHTML = html;
-  openModal('block-modal');
-}
-
-async function confirmBlock() {
-  if (!blockPicking) return;
-  const { user, quarter, blockNum, qStart, qEnd } = blockPicking;
-  const startDs = document.getElementById('block-sat-sel').value;
-  const startD  = fromStr(startDs);
-  const endD    = addDays(startD, 4);
-  const endDs   = dStr(endD);
-
-  if (startD < qStart || endD > qEnd) {
-    showErr('block-err','Block falls outside the quarter.'); return;
-  }
-
-  const dayMap = buildDayMap();
-  const conflict = dateRange(startD, endD).some(ds => {
-    const d = dayMap[ds];
-    return d && d.type !== 'unallocated' && d.owner !== user;
-  });
-  if (conflict) { showErr('block-err','These dates conflict with another reservation.'); return; }
-
-  const blockDays = dateRange(startD, endD);
-  const newCells = blockDays.map(ds => ({
-    Owner: user, Type: 'fixed', StartDate: ds, EndDate: ds,
-    Status: 'confirmed', Quarter: quarter, Note: `Block ${blockNum}`
-  }));
-  try {
-    const newIds = await addRows('Reservations', newCells);
-    await ensureQState(quarter);
-    (newIds || []).forEach((id, i) => reservations.push({ _id: id, ...newCells[i] }));
-  } catch(e) { showErr('block-err','Error saving: '+e.message); return; }
-
-  blockPicking = null;
-  closeModal('block-modal');
-  renderAll();
-}
-
-// ════════════════════════════════════════════════════════
-// FLOATING REQUEST
-// ════════════════════════════════════════════════════════
-async function submitFloatRequest() {
-  const name  = document.getElementById('req-name').value.trim();
-  const email = document.getElementById('req-email').value.trim();
-  const s     = document.getElementById('req-start').value;
-  const e     = document.getElementById('req-end').value;
-  const note  = document.getElementById('req-note').value.trim();
-
-  if (!name||!s||!e) { showErr('req-err','Name, check-in, and check-out are required.'); return; }
-  const sd=fromStr(s), ed=fromStr(e);
-  if (ed<sd) { showErr('req-err','Check-out must be after check-in.'); return; }
-  if (sd<START_DATE) { showErr('req-err','House opens August 1, 2026.'); return; }
-
-  // Check phase
-  const qk = getQuarterOf(s);
-  const phase = getPhase(qk);
-  if (phase !== 'C') { showErr('req-err','Floating days are not yet open for this quarter.'); return; }
-
-  const dayMap = buildDayMap();
-  const conflict = dateRange(sd, ed).some(ds => {
-    const d=dayMap[ds]; return d && !['floating_open','unallocated'].includes(d.type) && d.type !== undefined;
-  });
-  if (conflict) { showErr('req-err','These dates conflict with existing reservations.'); return; }
-
-  try {
-    const newIds = await addRows('FloatRequests', [{ Name:name, Email:email, StartDate:s, EndDate:e, Status:'pending', Note:note }]);
-    if (newIds[0]) floatRequests.push({ _id: newIds[0], Name:name, Email:email, StartDate:s, EndDate:e, Status:'pending', Note:note });
-  } catch(ex) { showErr('req-err','Error submitting: '+ex.message); return; }
-  closeModal('req-modal');
-  renderAll();
-}
-
-async function setPassword(userId, userName) {
+async function setPassword(userId) {
   const input = document.getElementById('pw-' + userId);
   const newPw = (input.value || '').trim();
   if (!newPw) { alert('Please enter a new password.'); return; }
@@ -1729,21 +1772,114 @@ async function setPassword(userId, userName) {
   } catch(e) { alert('Error setting password: ' + e.message); }
 }
 
+// ── Account administration (owner only) ──
+const ROLES = ['owner', 'contributor', 'other_family', 'guest'];
+function roleOptions(selected) {
+  return ROLES.map(r => `<option value="${r}"${r === selected ? ' selected' : ''}>${r}</option>`).join('');
+}
+async function setUserRole(userId, role) {
+  const u = users.find(u => u._id === userId);
+  if (!u || !ROLES.includes(role)) return;
+  try { await updateRow('Users', userId, { Role: role }); u.Role = role; }
+  catch(e) { alert('Error changing role: ' + e.message); }
+  renderAll(); // refreshes quotas, stats, and the day-input visibility for this account
+}
+async function setUserQuota(userId, value) {
+  const u = users.find(u => u._id === userId);
+  if (!u) return;
+  const n = parseInt(value, 10);
+  if (isNaN(n) || n < 0) { alert('Enter a whole number of days (0 or more).'); renderAll(); return; }
+  // Warn (but allow) if lowering below what they've already booked — existing stays aren't reclassified.
+  const perQuarter = {};
+  reservations.filter(r => r.Owner === u.Name && r.Type === 'fixed' && r.Status === 'confirmed' && r.StartDate && r.EndDate)
+    .forEach(r => { perQuarter[r.Quarter] = (perQuarter[r.Quarter] || 0) + dateRange(fromStr(r.StartDate), fromStr(r.EndDate)).length; });
+  let maxQk = null, maxDays = 0;
+  Object.entries(perQuarter).forEach(([qk, d]) => { if (d > maxDays) { maxDays = d; maxQk = qk; } });
+  if (n < maxDays && !confirm(`${u.Name} already has ${maxDays} fixed day(s) booked in ${maxQk}. Lowering the quota to ${n} won't change existing bookings — they'll simply exceed the new limit. Continue?`)) {
+    renderAll(); return;
+  }
+  try { await updateRow('Users', userId, { DaysPerQuarter: n }); u.DaysPerQuarter = n; }
+  catch(e) { alert('Error changing days: ' + e.message); }
+  renderAll();
+}
+async function addUser() {
+  const name = (document.getElementById('new-user-name').value || '').trim();
+  const role = document.getElementById('new-user-role').value;
+  const daysRaw = (document.getElementById('new-user-days').value || '').trim();
+  const pass = (document.getElementById('new-user-pass').value || '').trim();
+  if (!name) { showErr('new-user-err', 'Name is required.'); return; }
+  if (usersNamed(name).length) { showErr('new-user-err', `An account named “${name}” already exists.`); return; }
+  if (!pass) { showErr('new-user-err', 'Set a password for the new account.'); return; }
+  const cells = { Name: name, Password: pass, Role: ROLES.includes(role) ? role : 'guest' };
+  if (daysRaw !== '') { const n = parseInt(daysRaw, 10); if (!isNaN(n) && n >= 0) cells.DaysPerQuarter = n; }
+  try {
+    const ids = await addRows('Users', [cells]);
+    if (ids[0]) users.push({ _id: ids[0], ...cells });
+  } catch(e) { showErr('new-user-err', 'Error creating account: ' + e.message); return; }
+  renderAll();
+}
+async function deleteUser(userId) {
+  const u = users.find(u => u._id === userId);
+  if (!u) return;
+  if (u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase()) {
+    alert("You can't delete your own account while signed in."); return;
+  }
+  const owners = users.filter(x => (x.Role || '').toLowerCase().trim() === 'owner');
+  if ((u.Role || '').toLowerCase().trim() === 'owner' && owners.length <= 1) {
+    alert("You can't delete the only owner account."); return;
+  }
+  if (!confirm(`Delete the account “${u.Name}”? This removes their login only — existing reservations are kept.`)) return;
+  try {
+    await deleteRows('Users', [userId]);
+    users = users.filter(x => x._id !== userId);
+  } catch(e) { alert('Error deleting account: ' + e.message); return; }
+  renderAll();
+}
+
+// ── Self-service password change (any signed-in user) ──
+function renderMyAccount() {
+  const el = document.getElementById('my-account');
+  if (!el) return;
+  if (!currentUser) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="admin-section">
+      <h3>My account</h3>
+      <div class="pw-change">
+        <input type="password" id="mypw-current" placeholder="Current password" autocomplete="current-password">
+        <input type="password" id="mypw-new" placeholder="New password" autocomplete="new-password">
+        <input type="password" id="mypw-confirm" placeholder="Confirm new password" autocomplete="new-password">
+        <button class="btn primary" style="font-size:12px;padding:6px 12px" onclick="changeMyPassword()">Change password</button>
+        <span id="mypw-status" style="font-size:12px;color:var(--green);display:none">Updated ✓</span>
+      </div>
+      <div class="err" id="mypw-err" style="display:none"></div>
+    </div>`;
+}
+async function changeMyPassword() {
+  const cur = (document.getElementById('mypw-current').value || '').trim();
+  const nw  = (document.getElementById('mypw-new').value || '').trim();
+  const cf  = (document.getElementById('mypw-confirm').value || '').trim();
+  const me = users.find(u => u.Name && u.Name.trim().toLowerCase() === (currentUser || '').toLowerCase());
+  if (!me) { showErr('mypw-err', 'Your account could not be found.'); return; }
+  const existing = (me.Password || '').trim();
+  if (existing && existing !== cur) { showErr('mypw-err', 'Current password is incorrect.'); return; }
+  if (!nw) { showErr('mypw-err', 'Enter a new password.'); return; }
+  if (nw !== cf) { showErr('mypw-err', 'New passwords do not match.'); return; }
+  try {
+    await updateRow('Users', me._id, { Password: nw });
+    me.Password = nw;
+  } catch(e) { showErr('mypw-err', 'Error: ' + e.message); return; }
+  ['mypw-current', 'mypw-new', 'mypw-confirm'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('mypw-err').style.display = 'none';
+  const st = document.getElementById('mypw-status');
+  if (st) { st.style.display = ''; setTimeout(() => st.style.display = 'none', 2500); }
+}
+
 async function resolveFloat(rowId, status) {
   try {
     await updateRow('Reservations', rowId, { Status: status });
     const r = reservations.find(r => r._id === rowId);
     if (r) r.Status = status;
   } catch(e) { alert('Error: ' + e.message); return; }
-  renderAll();
-}
-
-async function resolveRequest(rowId, status) {
-  try {
-    await updateRow('FloatRequests', rowId, { Status: status });
-    const fr = floatRequests.find(r => r._id === rowId);
-    if (fr) fr.Status = status;
-  } catch(e) { alert('Error: '+e.message); return; }
   renderAll();
 }
 
@@ -1786,16 +1922,9 @@ function nextMonth() {
   syncQuarterToMonth();
   renderAll();
 }
-function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('tab-cal').classList.toggle('active', tab==='calendar');
-}
-function openModal(id) { document.getElementById(id).style.display='flex'; }
-function closeModal(id) { document.getElementById(id).style.display='none'; }
 function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
-document.querySelectorAll('.overlay').forEach(el => {
-  el.addEventListener('click', function(e){ if(e.target===this) closeModal(this.id); });
-});
+// Escape user-supplied text before injecting it into innerHTML.
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 // ════════════════════════════════════════════════════════
 // INIT
