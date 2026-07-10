@@ -134,7 +134,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 .legend-dot { width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--border2); flex-shrink: 0; }
 
 /* ── Stats ── */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 1.25rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 1.25rem; }
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
 .stat-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; }
 .stat-val { font-size: 22px; font-weight: 700; letter-spacing: -.5px; }
@@ -272,7 +272,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
   .cal-month { font-size: 14px; }
   .cal-grid { gap: 1px; }
   .day-hdr { font-size: 10px; padding: 4px 1px; }
-  .stats { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; }
+  .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
   .stat { padding: 8px 10px; }
   .stat-val { font-size: 18px; }
   .stat-label { font-size: 10px; }
@@ -284,6 +284,11 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 </style>
 </head>
 <body>
+
+<!-- ── Boot loading (shown until the initial auth check resolves) ── -->
+<div id="boot-loading" class="loading-bar" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem">
+  <div class="spinner"></div> Loading…
+</div>
 
 <!-- ── Login screen ── -->
 <div id="login-screen" style="display:none">
@@ -365,6 +370,8 @@ main { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
 let currentUser = null;
 
 function showLogin() {
+  const boot = document.getElementById('boot-loading');
+  if (boot) boot.style.display = 'none';
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-shell').style.display = 'none';
   const btn = document.getElementById('login-submit-btn');
@@ -679,8 +686,8 @@ async function loadAll() {
   } catch(e) {
     document.getElementById('cal-grid').innerHTML =
       `<div class="loading-bar" style="grid-column:1/-1;color:var(--red)">
-        <strong>Error loading from Coda:</strong> ${esc(e.message)}<br>
-        <small>Check token, Doc ID, and that all required tables exist with exact column names.</small>
+        <strong>Couldn't load the calendar.</strong> Please refresh the page.<br>
+        <small>If this keeps happening, let ${esc(ownerName())} know. (${esc(e.message)})</small>
       </div>`;
   }
 }
@@ -839,6 +846,8 @@ async function login(who) {
   currentUser = who;
   johnSelecting = null;
   userSelecting  = null;
+  const boot = document.getElementById('boot-loading');
+  if (boot) boot.style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'block';
   const badge = document.getElementById('who-badge');
@@ -996,6 +1005,8 @@ function renderQFlow() {
 
   area.innerHTML = `<div class="qflow">
     <div class="phase-steps" style="margin-bottom:.75rem">${stepsHTML}</div>
+    <div class="sub">Each person gets a set number of <strong>fixed</strong> days per quarter — guaranteed once picked.
+      Extra days become <strong>floating</strong> requests, which ${esc(owner)} approves or denies.</div>
     ${msgHTML}
   </div>`;
 
@@ -1200,7 +1211,7 @@ function renderStats() {
   }).filter(Boolean).join('');
 
   document.getElementById('stats-row').innerHTML =
-    fixedCards + divider + (floatCards || '<div class="stat"><div class="stat-label">Float</div><div class="stat-val" style="font-size:12px;color:var(--text3)">None yet</div></div>');
+    fixedCards + divider + (floatCards || '<div class="stat" style="grid-column:1/-1"><div class="stat-label">Float</div><div class="stat-val" style="font-size:12px;color:var(--text3)">No floating requests yet this quarter</div></div>');
 }
 
 function renderLegend() {
